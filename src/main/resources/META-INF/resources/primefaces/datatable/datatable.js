@@ -5075,7 +5075,19 @@ PrimeFaces.widget.DataTable = PrimeFaces.widget.DeferredWidget.extend({
             var groupedRow = isGroupedRow ? row : row.prevAll('.ui-datatable-grouped-row:first');
             var groupedColumn = groupedRow.children('.ui-grouped-column:first');
             var rowSpan = groupedRow.nextUntil('.ui-datatable-grouped-row').not(':hidden').length + 1;
+            var diff = rowSpan - parseInt(groupedColumn.attr('rowspan') || 1);
             groupedColumn.attr('rowspan', rowSpan);
+    
+            var groupedColumnIndex = groupedColumn.index();
+            if (groupedColumnIndex > 0) {
+                var columns = row.children('td:visible');
+                for (var i = 0; i < groupedColumnIndex; i++) {
+                    var column = columns.eq(i);
+                    if (column) {
+                        column.attr('rowspan', parseInt(column.attr('rowspan') || 1) + diff);
+                    }
+                }
+            }
         }
     },
 
