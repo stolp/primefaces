@@ -21,41 +21,46 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package org.primefaces.integrationtests.core.ajax;
+package org.primefaces.integrationtests.datatable;
 
 import lombok.Data;
-import org.primefaces.PrimeFaces;
 
 import javax.annotation.PostConstruct;
+import javax.faces.application.FacesMessage;
+import javax.faces.context.FacesContext;
 import javax.faces.view.ViewScoped;
+import javax.inject.Inject;
 import javax.inject.Named;
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Named
 @ViewScoped
 @Data
-public class CoreAjax001 implements Serializable {
+public class DataTable005Array implements Serializable {
 
-    private static final long serialVersionUID = 8797995450720503195L;
+    private static final long serialVersionUID = 2211134215865964295L;
 
-    private List<String> values = new ArrayList<>(Arrays.asList("a", "b", "c"));
-    private String value;
-    private String text;
+    private List<ProgrammingLanguage> progLanguages;
+    private ProgrammingLanguage[] selectedProgLanguages;
+
+    @Inject
+    private ProgrammingLanguageService service;
 
     @PostConstruct
     public void init() {
-        text = "byebye!";
+        progLanguages = service.getLangs();
     }
 
-    public void test1() {
-
+    public void submit() {
+        if (selectedProgLanguages != null) {
+            FacesMessage msg = new FacesMessage("Selected ProgrammingLanguage(s)", Arrays.asList(selectedProgLanguages).stream()
+                    .sorted((l1, l2) -> l1.getId().compareTo(l2.getId()))
+                    .map(lang -> lang.getId().toString())
+                    .collect(Collectors.joining(",")));
+            FacesContext.getCurrentInstance().addMessage(null, msg);
+        }
     }
-
-    public void test2() {
-        PrimeFaces.current().focus("form:inputtext");
-    }
-
 }

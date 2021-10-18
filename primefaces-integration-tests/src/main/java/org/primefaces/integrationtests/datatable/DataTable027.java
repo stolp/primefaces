@@ -21,41 +21,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package org.primefaces.integrationtests.core.ajax;
+package org.primefaces.integrationtests.datatable;
 
-import lombok.Data;
-import org.primefaces.PrimeFaces;
+import java.io.Serializable;
 
 import javax.annotation.PostConstruct;
 import javax.faces.view.ViewScoped;
 import javax.inject.Named;
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+
+import lombok.Data;
 
 @Named
 @ViewScoped
 @Data
-public class CoreAjax001 implements Serializable {
+public class DataTable027 implements Serializable {
 
-    private static final long serialVersionUID = 8797995450720503195L;
+    private static final long serialVersionUID = -7518459955779385834L;
 
-    private List<String> values = new ArrayList<>(Arrays.asList("a", "b", "c"));
-    private String value;
-    private String text;
+    protected ProgrammingLanguageLazyDataModel lazyDataModel;
 
     @PostConstruct
     public void init() {
-        text = "byebye!";
-    }
-
-    public void test1() {
-
-    }
-
-    public void test2() {
-        PrimeFaces.current().focus("form:inputtext");
+        lazyDataModel = new ProgrammingLanguageLazyDataModel();
     }
 
 }
