@@ -24,54 +24,67 @@
 package org.primefaces.integrationtests.datatable;
 
 import lombok.Data;
+import org.primefaces.component.datatable.DataTable;
 
 import javax.annotation.PostConstruct;
-import javax.faces.application.FacesMessage;
 import javax.faces.context.FacesContext;
 import javax.faces.view.ViewScoped;
-import javax.inject.Inject;
 import javax.inject.Named;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Named
 @ViewScoped
 @Data
-public class DataTable010 implements Serializable {
+public class DataTable029 implements Serializable {
 
-    private static final long serialVersionUID = -7518459955779385834L;
+    private static final long serialVersionUID = -9070796086139839567L;
 
-    private List<ProgrammingLanguage> progLanguages;
-    private List<ProgrammingLanguage> selectedProgLanguages;
+    public static class Data {
 
-    @Inject
-    private ProgrammingLanguageService service;
+        private final String text;
+
+        private final int num;
+
+        public Data(String text, int num) {
+            this.text = text;
+            this.num = num;
+        }
+
+        public String getText() {
+            return text;
+        }
+
+        public int getNum() {
+            return num;
+        }
+    }
+
+    private List<Data> data;
+
+    public List<Data> getData() {
+        return data;
+    }
 
     @PostConstruct
-    public void init() {
-        progLanguages = service.getLangs();
-    }
+    public void refresh() {
+        List<Data> newData = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            // Generate random letter and number to test sorting
+            newData.add(new Data("Data " + ((char) ((int) 'A' + ThreadLocalRandom.current().nextInt(26))),
+                    ThreadLocalRandom.current().nextInt(100)));
+        }
 
-    public void submit() {
-        if (selectedProgLanguages != null) {
-            FacesMessage msg = new FacesMessage("Selected ProgrammingLanguage(s)", selectedProgLanguages.stream()
-                    .sorted((l1, l2) -> l1.getId().compareTo(l2.getId()))
-                    .map(lang -> lang.getId().toString())
-                    .collect(Collectors.joining(",")));
-            FacesContext.getCurrentInstance().addMessage(null, msg);
+        boolean firstTime = (this.data == null);
+
+        this.data = newData;
+
+        if (!firstTime) {
+            DataTable dataTable = (DataTable) FacesContext.getCurrentInstance().getViewRoot().findComponent("form:datatable");
+            dataTable.filterAndSort(); //work-around to keep sort-order
         }
     }
 
-    public void deleteRow() {
-        ProgrammingLanguage programmingLanguage2Remove = progLanguages.stream().filter(lang -> lang.getName().equals("Java")).findFirst().get();
-
-        boolean removed = progLanguages.remove(programmingLanguage2Remove);
-        if (removed) {
-            selectedProgLanguages.remove(programmingLanguage2Remove);
-
-            FacesMessage msg = new FacesMessage("ProgrammingLanguage 'Java' removed");
-            FacesContext.getCurrentInstance().addMessage(null, msg);
-        }
-    }
 }
