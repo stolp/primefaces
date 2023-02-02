@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -40,11 +40,14 @@ public class DataTable029 implements Serializable {
 
     private static final long serialVersionUID = -9070796086139839567L;
 
-    public static class Data {
+    public static class Data implements Serializable {
 
-        private final String text;
+        private String text;
+        private int num;
 
-        private final int num;
+        public Data() {
+
+        }
 
         public Data(String text, int num) {
             this.text = text;

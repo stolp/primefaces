@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,7 +22,6 @@
  * THE SOFTWARE.
  */
 package org.primefaces.component.inputnumber;
-
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -157,16 +156,15 @@ public class InputNumberTest {
     @Test
     public void testDecodeInvalidNumber() {
         setupValues("crash", false, null, null, false);
-        
+
         // Act
         FacesException thrown = Assertions.assertThrows(FacesException.class, () -> {
             renderer.decode(context, inputNumber);
         });
-        
 
         // Assert (expected exception)
         assertEquals("Invalid number", thrown.getMessage());
-        
+
     }
 
     @Test

@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -61,7 +61,8 @@ public abstract class TreeBase extends UITree implements Widget, RTLAware, Clien
         multipleDrag,
         dropCopyNode,
         onDrop,
-        filterMode
+        filterMode,
+        filterFunction
     }
 
     public TreeBase() {
@@ -263,5 +264,13 @@ public abstract class TreeBase extends UITree implements Widget, RTLAware, Clien
 
     public void setFilterMode(String filterMode) {
         getStateHelper().put(PropertyKeys.filterMode, filterMode);
+    }
+
+    public javax.el.MethodExpression getFilterFunction() {
+        return (javax.el.MethodExpression) getStateHelper().eval(PropertyKeys.filterFunction, null);
+    }
+
+    public void setFilterFunction(javax.el.MethodExpression filterFunction) {
+        getStateHelper().put(PropertyKeys.filterFunction, filterFunction);
     }
 }

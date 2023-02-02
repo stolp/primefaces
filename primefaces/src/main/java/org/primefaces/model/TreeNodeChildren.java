@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -35,6 +35,10 @@ public class TreeNodeChildren<T> extends TreeNodeList<T> {
 
     public TreeNodeChildren(TreeNode<T> parent) {
         this.parent = parent;
+    }
+
+    public TreeNode<T> getParent() {
+        return parent;
     }
 
     private void eraseParent(TreeNode<T> node) {
@@ -137,34 +141,6 @@ public class TreeNodeChildren<T> extends TreeNodeList<T> {
 
         TreeNode previous = get(index);
         super.set(index, node);
-        previous.setParent(null);
-        node.setParent(parent);
-        updateRowKeys(parent, node, index);
-        return previous;
-    }
-
-    /**
-     * Optimized set implementation to be used in sorting
-     *
-     * @param index index of the element to replace
-     * @param node node to be stored at the specified position
-     * @return the node previously at the specified position
-     */
-    @Override
-    public TreeNode setSibling(int index, TreeNode node) {
-        if (node == null) {
-            throw new NullPointerException();
-        }
-        if (index < 0 || index >= size()) {
-            throw new IndexOutOfBoundsException();
-        }
-
-        if (!parent.equals(node.getParent())) {
-            eraseParent(node);
-        }
-
-        TreeNode previous = get(index);
-        super.set(index, node);
         node.setParent(parent);
         updateRowKeys(parent, node, index);
         return previous;
@@ -200,7 +176,7 @@ public class TreeNodeChildren<T> extends TreeNodeList<T> {
         }
     }
 
-    private void updateRowKeys(TreeNode<?> node) {
+    protected void updateRowKeys(TreeNode<?> node) {
         int childCount = node.getChildCount();
         if (childCount > 0) {
             for (int i = 0; i < childCount; i++) {
@@ -211,7 +187,7 @@ public class TreeNodeChildren<T> extends TreeNodeList<T> {
         }
     }
 
-    private void updateRowKeys(int index, TreeNode<?> node) {
+    protected void updateRowKeys(int index, TreeNode<?> node) {
         int childCount = node.getChildCount();
         if (childCount > 0) {
             for (int i = index; i < childCount; i++) {
@@ -221,7 +197,7 @@ public class TreeNodeChildren<T> extends TreeNodeList<T> {
         }
     }
 
-    private void updateRowKeys(TreeNode<?> node, TreeNode<?> childNode, int i) {
+    protected void updateRowKeys(TreeNode<?> node, TreeNode<?> childNode, int i) {
         String childRowKey = node.getParent() == null ? String.valueOf(i) : node.getRowKey() + "_" + i;
         childNode.setRowKey(childRowKey);
         this.updateRowKeys(childNode);

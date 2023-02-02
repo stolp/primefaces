@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -55,14 +55,7 @@ public enum MatchMode {
     BETWEEN("between"),
     NOT_BETWEEN("notBetween"),
 
-    GLOBAL("global"),
-
-    /**
-     * Please use {@link MatchMode#BETWEEN}
-     * @deprecated
-     */
-    @Deprecated
-    RANGE("range");
+    GLOBAL("global");
 
     private final String operator;
 

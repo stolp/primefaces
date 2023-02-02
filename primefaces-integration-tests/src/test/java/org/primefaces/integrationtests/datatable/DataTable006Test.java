@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -58,13 +58,13 @@ public class DataTable006Test extends AbstractDataTableTest {
         int cnt = 0;
         for (Row row : dataTable.getRows()) {
             WebElement checkboxIcon = row.getCell(0).getWebElement().findElement(By.className("ui-chkbox-icon"));
-            if (cnt == 0 || cnt ==2) {
+            if (cnt == 0 || cnt == 2) {
                 assertCss(checkboxIcon, "ui-icon-check");
             }
             else {
                 assertCss(checkboxIcon, "ui-icon-blank");
             }
-            cnt ++;
+            cnt++;
         }
 
         assertConfiguration(dataTable.getWidgetConfiguration(), true);
@@ -107,6 +107,51 @@ public class DataTable006Test extends AbstractDataTableTest {
 
     @Test
     @Order(3)
+    @DisplayName("DataTable: selection - lazy multiple with checkboxes and selection on multiple pages - https://github.com/primefaces/primefaces/issues/8110")
+    public void testLazySelectionMultipleCheckboxesWithPagination(Page page) {
+        // Arrange
+        DataTable dataTable = page.dataTable;
+        page.toggleLazyMode.click();
+
+        // Act
+        dataTable.getCell(0, 0).getWebElement().click();
+        dataTable.getCell(2, 0).getWebElement().click();
+        dataTable.selectPage(2);
+        dataTable.getCell(1, 0).getWebElement().click();
+        dataTable.selectPage(1);
+
+        // Assert - row 0 and 2 on page 1 still selected
+        Assertions.assertEquals(dataTable.getCell(0, 0).getWebElement().findElement(By.className("ui-chkbox-box")).getAttribute("aria-checked"), "true");
+        Assertions.assertEquals(dataTable.getCell(1, 0).getWebElement().findElement(By.className("ui-chkbox-box")).getAttribute("aria-checked"), "false");
+        Assertions.assertEquals(dataTable.getCell(2, 0).getWebElement().findElement(By.className("ui-chkbox-box")).getAttribute("aria-checked"), "true");
+
+        // Act
+        page.submit.click();
+
+        // Assert
+        assertSelectAllCheckbox(dataTable, false);
+        assertSelections(page.messages, "1,3,5");
+        assertConfiguration(dataTable.getWidgetConfiguration(), true);
+
+        // Assert - row 0 and 2 on page 1 and row 1 on page 2 still selected
+        Assertions.assertEquals(
+                dataTable.getCell(0, 0).getWebElement().findElement(By.className("ui-chkbox-box")).getAttribute("aria-checked"), "true");
+        Assertions.assertEquals(
+                dataTable.getCell(1, 0).getWebElement().findElement(By.className("ui-chkbox-box")).getAttribute("aria-checked"), "false");
+        Assertions.assertEquals(
+                dataTable.getCell(2, 0).getWebElement().findElement(By.className("ui-chkbox-box")).getAttribute("aria-checked"), "true");
+        dataTable.selectPage(2);
+
+        Assertions.assertEquals(
+                dataTable.getCell(0, 0).getWebElement().findElement(By.className("ui-chkbox-box")).getAttribute("aria-checked"), "false");
+        Assertions.assertEquals(
+                dataTable.getCell(1, 0).getWebElement().findElement(By.className("ui-chkbox-box")).getAttribute("aria-checked"), "true");
+        Assertions.assertEquals(
+                dataTable.getCell(2, 0).getWebElement().findElement(By.className("ui-chkbox-box")).getAttribute("aria-checked"), "false");
+    }
+
+    @Test
+    @Order(4)
     @DisplayName("DataTable: selection - select all for page with selectionPageOnly='true'")
     public void testSelectAllPageOnly(Page page) {
         // Arrange
@@ -131,7 +176,7 @@ public class DataTable006Test extends AbstractDataTableTest {
     }
 
     @Test
-    @Order(4)
+    @Order(5)
     @DisplayName("DataTable: selection - Lazy select all for page with selectionPageOnly='true'")
     public void testLazySelectAllPageOnly(Page page) {
         // Arrange
@@ -157,7 +202,7 @@ public class DataTable006Test extends AbstractDataTableTest {
     }
 
     @Test
-    @Order(3)
+    @Order(6)
     @DisplayName("DataTable: selection - unselect all for page with selectionPageOnly='true'")
     public void testUnselectAllPageOnly(Page page) {
         // Arrange
@@ -182,7 +227,7 @@ public class DataTable006Test extends AbstractDataTableTest {
     }
 
     @Test
-    @Order(5)
+    @Order(7)
     @DisplayName("DataTable: GitHub #6730 selection - select all rows with selectionPageOnly='false'")
     public void testSelectAllRows(Page page) {
         // Arrange
@@ -194,7 +239,7 @@ public class DataTable006Test extends AbstractDataTableTest {
         page.submit.click();
 
         // Assert
-        assertSelectAllCheckbox(dataTable, false);
+        assertSelectAllCheckbox(dataTable, true);
         assertSelections(page.messages, "1,2,3,4,5");
 
         // Act - unselect one row
@@ -217,7 +262,7 @@ public class DataTable006Test extends AbstractDataTableTest {
     }
 
     @Test
-    @Order(6)
+    @Order(8)
     @DisplayName("DataTable: GitHub #6730 selection - Lazy select all rows with selectionPageOnly='false'")
     public void testLazySelectAllRows(Page page) {
         // Arrange
@@ -230,9 +275,10 @@ public class DataTable006Test extends AbstractDataTableTest {
         page.submit.click();
 
         // Assert
-        assertSelectAllCheckbox(dataTable, false);
+        assertSelectAllCheckbox(dataTable, true);
         assertSelections(page.messages,
-                    "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3");
+                "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,"
+                        + "2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3");
 
         // Act - unselect one row
         dataTable.getCell(1, 0).getWebElement().click();
@@ -254,7 +300,7 @@ public class DataTable006Test extends AbstractDataTableTest {
     }
 
     @Test
-    @Order(7)
+    @Order(9)
     @DisplayName("DataTable: GitHub #7368, #7737 selection - with filtering")
     public void testLazySelectionWithFiltering(Page page) {
         // Arrange
@@ -310,6 +356,7 @@ public class DataTable006Test extends AbstractDataTableTest {
     }
 
     public static class Page extends AbstractPrimePage {
+
         @FindBy(id = "form:msgs")
         Messages messages;
 

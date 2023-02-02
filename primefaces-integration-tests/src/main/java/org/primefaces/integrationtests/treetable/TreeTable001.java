@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -49,6 +49,8 @@ public class TreeTable001 implements Serializable {
 
     private Document selectedDocument;
 
+    private boolean otherDocuments = false;
+
     @Inject
     private DocumentService service;
 
@@ -78,5 +80,19 @@ public class TreeTable001 implements Serializable {
 
     public void unselectNode(NodeUnselectEvent event) {
         TestUtils.addMessage("unselect-event", ((Document) event.getTreeNode().getData()).getName());
+    }
+
+    public void switch2OtherDocuments() {
+        if (otherDocuments) {
+            root = service.createDocuments();
+        }
+        else {
+            root = service.createOtherDocuments();
+        }
+        otherDocuments = !otherDocuments;
+
+        // ideally the following two lines should not be necessary
+        TreeTable treeTable = (TreeTable) FacesContext.getCurrentInstance().getViewRoot().findComponent("form:treeTable");
+        treeTable.filterAndSort();
     }
 }

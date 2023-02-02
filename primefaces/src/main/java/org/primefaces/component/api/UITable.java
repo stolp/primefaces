@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -37,6 +37,7 @@ import javax.faces.component.UIComponent;
 import javax.faces.component.UINamingContainer;
 import javax.faces.component.ValueHolder;
 import javax.faces.context.FacesContext;
+import org.primefaces.component.column.ColumnBase;
 
 import org.primefaces.component.headerrow.HeaderRow;
 import org.primefaces.expression.SearchExpressionFacade;
@@ -61,7 +62,7 @@ public interface UITable<T extends UITableState> extends ColumnAware, MultiViewS
 
 
     default Map<String, FilterMeta> initFilterBy(FacesContext context) {
-        Map<String, FilterMeta> filterBy = new HashMap<>();
+        Map<String, FilterMeta> filterBy = new LinkedHashMap<>();
         AtomicBoolean filtered = new AtomicBoolean();
 
         // build columns filterBy
@@ -167,9 +168,20 @@ public interface UITable<T extends UITableState> extends ColumnAware, MultiViewS
         }
     }
 
-    default boolean isColumnFilterable(UIColumn column) {
+    default boolean isColumnFilterable(FacesContext context, UIColumn column) {
         Map<String, FilterMeta> filterBy = getFilterByAsMap();
-        return filterBy.containsKey(column.getColumnKey());
+        if (filterBy.containsKey(column.getColumnKey())) {
+            return true;
+        }
+
+        // lazy init - happens in cases where the column is initially not rendered
+        FilterMeta f = FilterMeta.of(context, getVar(), column);
+        if (f != null) {
+            filterBy.put(f.getColumnKey(), f);
+        }
+        setFilterByAsMap(filterBy);
+
+        return f != null;
     }
 
     default void updateFilterByValuesWithFilterRequest(FacesContext context, Map<String, FilterMeta> filterBy) {
@@ -206,11 +218,14 @@ public interface UITable<T extends UITableState> extends ColumnAware, MultiViewS
                 filterValue = params.get(valueHolderClientId);
             }
 
-            // returns null if empty string/array/object
-            if (filterValue != null
-                    && (filterValue instanceof String && LangUtils.isBlank((String) filterValue)
-                    || filterValue.getClass().isArray() && Array.getLength(filterValue) == 0)) {
-                filterValue = null;
+            // returns null if empty string/collection/array/object
+            if (filterValue != null) {
+                if ((filterValue instanceof String && LangUtils.isBlank((String) filterValue))
+                    || (filterValue instanceof Collection && ((Collection) filterValue).isEmpty())
+                    || (filterValue instanceof Iterable && !((Iterable) filterValue).iterator().hasNext())
+                    || (filterValue.getClass().isArray() && Array.getLength(filterValue) == 0)) {
+                    filterValue = null;
+                }
             }
 
             filterMeta.setFilterValue(filterValue);
@@ -260,7 +275,7 @@ public interface UITable<T extends UITableState> extends ColumnAware, MultiViewS
     void setGlobalFilterOnly(boolean globalFilterOnly);
 
     default Map<String, SortMeta> initSortBy(FacesContext context) {
-        Map<String, SortMeta> sortBy = new HashMap<>();
+        Map<String, SortMeta> sortBy = new LinkedHashMap<>();
         AtomicBoolean sorted = new AtomicBoolean();
 
         HeaderRow headerRow = getHeaderRow();
@@ -368,15 +383,14 @@ public interface UITable<T extends UITableState> extends ColumnAware, MultiViewS
             return true;
         }
 
+        // lazy init - happens in cases where the column is initially not rendered
         SortMeta s = SortMeta.of(context, getVar(), column);
-        if (s == null) {
-            return false;
+        if (s != null) {
+            sortBy.put(s.getColumnKey(), s);
         }
+        setSortByAsMap(sortBy);
 
-        // unlikely to happen, in case columns change between two ajax requests
-        sortBy.put(s.getColumnKey(), s);
-
-        return true;
+        return s != null;
     }
 
     default String getSortMetaAsString() {
@@ -520,10 +534,16 @@ public interface UITable<T extends UITableState> extends ColumnAware, MultiViewS
                 .collect(Collectors.joining(","));
     }
 
+    default Object getFieldValue(FacesContext context, UIColumn column) {
+        Object value = UIColumn.createValueExpressionFromField(context, getVar(), column.getField()).getValue(context.getELContext());
+        return value;
+    }
+
     default String getConvertedFieldValue(FacesContext context, UIColumn column) {
         Object value = UIColumn.createValueExpressionFromField(context, getVar(), column.getField()).getValue(context.getELContext());
         UIComponent component = column instanceof DynamicColumn ? ((DynamicColumn) column).getColumns() : (UIComponent) column;
-        return ComponentUtils.getConvertedAsString(context, component, value);
+        Object converter = column instanceof ColumnBase ? ((ColumnBase) column).getConverter() : null;
+        return ComponentUtils.getConvertedAsString(context, component, converter, value);
     }
 
     default boolean isFilteringCurrentlyActive() {
@@ -599,5 +619,21 @@ public interface UITable<T extends UITableState> extends ColumnAware, MultiViewS
         catch (Exception e) {
             throw new FacesException(e);
         }
+    }
+
+    /**
+     * Recalculates filteredValue after adding, updating or removing object to/from a filtered UITable.
+     */
+    void filterAndSort();
+
+    /**
+     * Resets all column related state after adding/removing/moving columns.
+     */
+    default void resetColumns() {
+        resetDynamicColumns();
+        setColumns(null);
+        setSortByAsMap(null);
+        setFilterByAsMap(null);
+        setColumnMeta(null);
     }
 }

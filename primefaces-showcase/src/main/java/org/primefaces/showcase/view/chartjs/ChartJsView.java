@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,6 +23,17 @@
  */
 package org.primefaces.showcase.view.chartjs;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import javax.annotation.PostConstruct;
+import javax.enterprise.context.RequestScoped;
+import javax.faces.application.FacesMessage;
+import javax.faces.context.FacesContext;
+import javax.inject.Named;
+
 import org.primefaces.event.ItemSelectEvent;
 import org.primefaces.model.charts.ChartData;
 import org.primefaces.model.charts.axes.cartesian.CartesianScales;
@@ -41,16 +52,17 @@ import org.primefaces.model.charts.data.BubblePoint;
 import org.primefaces.model.charts.data.NumericPoint;
 import org.primefaces.model.charts.donut.DonutChartDataSet;
 import org.primefaces.model.charts.donut.DonutChartModel;
+import org.primefaces.model.charts.donut.DonutChartOptions;
 import org.primefaces.model.charts.hbar.HorizontalBarChartDataSet;
 import org.primefaces.model.charts.hbar.HorizontalBarChartModel;
 import org.primefaces.model.charts.line.LineChartDataSet;
 import org.primefaces.model.charts.line.LineChartModel;
 import org.primefaces.model.charts.line.LineChartOptions;
+import org.primefaces.model.charts.optionconfig.animation.Animation;
 import org.primefaces.model.charts.optionconfig.elements.Elements;
 import org.primefaces.model.charts.optionconfig.elements.ElementsLine;
 import org.primefaces.model.charts.optionconfig.legend.Legend;
 import org.primefaces.model.charts.optionconfig.legend.LegendLabel;
-import org.primefaces.model.charts.optionconfig.animation.Animation;
 import org.primefaces.model.charts.optionconfig.title.Title;
 import org.primefaces.model.charts.optionconfig.tooltip.Tooltip;
 import org.primefaces.model.charts.pie.PieChartDataSet;
@@ -62,19 +74,11 @@ import org.primefaces.model.charts.radar.RadarChartModel;
 import org.primefaces.model.charts.radar.RadarChartOptions;
 import org.primefaces.model.charts.scatter.ScatterChartModel;
 
-import javax.annotation.PostConstruct;
-import javax.enterprise.context.RequestScoped;
-import javax.faces.application.FacesMessage;
-import javax.faces.context.FacesContext;
-import javax.inject.Named;
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 @Named
 @RequestScoped
 public class ChartJsView implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     private PieChartModel pieModel;
 
@@ -221,6 +225,11 @@ public class ChartJsView implements Serializable {
         title.setDisplay(true);
         title.setText("Line Chart");
         options.setTitle(title);
+
+        Title subtitle = new Title();
+        subtitle.setDisplay(true);
+        subtitle.setText("Line Chart Subtitle");
+        options.setSubtitle(subtitle);
 
         lineModel.setOptions(options);
         lineModel.setData(data);
@@ -387,8 +396,8 @@ public class ChartJsView implements Serializable {
         CartesianScales cScales = new CartesianScales();
         CartesianLinearAxes linearAxes = new CartesianLinearAxes();
         linearAxes.setOffset(true);
+        linearAxes.setBeginAtZero(true);
         CartesianLinearTicks ticks = new CartesianLinearTicks();
-        ticks.setBeginAtZero(true);
         linearAxes.setTicks(ticks);
         cScales.addYAxesData(linearAxes);
         options.setScales(cScales);
@@ -402,7 +411,7 @@ public class ChartJsView implements Serializable {
         legend.setDisplay(true);
         legend.setPosition("top");
         LegendLabel legendLabels = new LegendLabel();
-        legendLabels.setFontStyle("bold");
+        legendLabels.setFontStyle("italic");
         legendLabels.setFontColor("#2980B9");
         legendLabels.setFontSize(24);
         legend.setLabels(legendLabels);
@@ -469,8 +478,8 @@ public class ChartJsView implements Serializable {
         CartesianScales cScales = new CartesianScales();
         CartesianLinearAxes linearAxes = new CartesianLinearAxes();
         linearAxes.setOffset(true);
+        linearAxes.setBeginAtZero(true);
         CartesianLinearTicks ticks = new CartesianLinearTicks();
-        ticks.setBeginAtZero(true);
         linearAxes.setTicks(ticks);
         cScales.addYAxesData(linearAxes);
         options.setScales(cScales);
@@ -539,8 +548,8 @@ public class ChartJsView implements Serializable {
         CartesianScales cScales = new CartesianScales();
         CartesianLinearAxes linearAxes = new CartesianLinearAxes();
         linearAxes.setOffset(true);
+        linearAxes.setBeginAtZero(true);
         CartesianLinearTicks ticks = new CartesianLinearTicks();
-        ticks.setBeginAtZero(true);
         linearAxes.setTicks(ticks);
         cScales.addXAxesData(linearAxes);
         options.setScales(cScales);
@@ -841,11 +850,11 @@ public class ChartJsView implements Serializable {
         RadarChartOptions options = new RadarChartOptions();
         RadialScales rScales = new RadialScales();
 
-        RadialLinearAngleLines angelLines = new RadialLinearAngleLines();
-        angelLines.setDisplay(true);
-        angelLines.setLineWidth(0.5);
-        angelLines.setColor("rgba(128, 128, 128, 0.2)");
-        rScales.setAngelLines(angelLines);
+        RadialLinearAngleLines angleLines = new RadialLinearAngleLines();
+        angleLines.setDisplay(true);
+        angleLines.setLineWidth(0.5);
+        angleLines.setColor("rgba(128, 128, 128, 0.2)");
+        rScales.setAngleLines(angleLines);
 
         RadialLinearPointLabels pointLabels = new RadialLinearPointLabels();
         pointLabels.setFontSize(14);
@@ -925,8 +934,8 @@ public class ChartJsView implements Serializable {
         CartesianScales cScales = new CartesianScales();
         CartesianLinearAxes linearAxes = new CartesianLinearAxes();
         linearAxes.setOffset(true);
+        linearAxes.setBeginAtZero(true);
         CartesianLinearTicks ticks = new CartesianLinearTicks();
-        ticks.setBeginAtZero(true);
         linearAxes.setTicks(ticks);
 
         cScales.addYAxesData(linearAxes);
@@ -937,6 +946,9 @@ public class ChartJsView implements Serializable {
     public void createDonutModel() {
         donutModel = new DonutChartModel();
         ChartData data = new ChartData();
+        DonutChartOptions options = new DonutChartOptions();
+        options.setMaintainAspectRatio(false);
+        donutModel.setOptions(options);
 
         DonutChartDataSet dataSet = new DonutChartDataSet();
         List<Number> values = new ArrayList<>();

@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,7 +28,8 @@ import java.util.function.BiPredicate;
 public class LessThanFilterConstraint extends ComparableFilterConstraint {
 
     @Override
-    protected BiPredicate<String, String> getPredicate() {
+    protected BiPredicate<Comparable, Comparable> getPredicate() {
         return (o1, o2) -> o1.compareTo(o2) < 0;
     }
+
 }

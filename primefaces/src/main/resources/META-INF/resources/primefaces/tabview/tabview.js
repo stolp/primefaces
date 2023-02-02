@@ -59,6 +59,8 @@
  * @prop {number} cfg.selected The currently selected tab.
  * @prop {number} cfg.tabindex Position of the element in the tabbing order.
  * @prop {boolean} cfg.multiViewState Whether to keep TabView state across views.
+ * @prop {boolean} cfg.focusOnError Whether to focus the first tab that has an error associated to it.
+ * @prop {boolean} cfg.focusOnLastActiveTab Whether to focus on the last active tab that a user selected.
  */
 PrimeFaces.widget.TabView = PrimeFaces.widget.DeferredWidget.extend({
 
@@ -170,6 +172,7 @@ PrimeFaces.widget.TabView = PrimeFaces.widget.DeferredWidget.extend({
 
                         if(!element.hasClass('ui-state-disabled') && index !== $this.cfg.selected) {
                             $this.select(index);
+                            element.trigger('focus.tabview');
                         }
                     }
 
@@ -239,6 +242,7 @@ PrimeFaces.widget.TabView = PrimeFaces.widget.DeferredWidget.extend({
 
         this.bindSwipeEvents();
         this.bindKeyEvents();
+        this.bindRefreshListener();
     },
 
     /**
@@ -276,7 +280,7 @@ PrimeFaces.widget.TabView = PrimeFaces.widget.DeferredWidget.extend({
             tabs = this.headerContainer;
 
         /* For Screen Reader and Keyboard accessibility */
-        tabs.attr('tabindex', this.tabindex);
+        tabs.not('.ui-state-disabled').attr('tabindex', this.tabindex);
 
         tabs.on('focus.tabview', function(e) {
             var focusedTab = $(this);
@@ -298,11 +302,8 @@ PrimeFaces.widget.TabView = PrimeFaces.widget.DeferredWidget.extend({
             $(this).removeClass('ui-tabs-outline');
         })
         .on('keydown.tabview', function(e) {
-            var keyCode = $.ui.keyCode,
-            key = e.which,
-            element = $(this);
-
-            if((key === keyCode.SPACE || key === keyCode.ENTER) && !element.hasClass('ui-state-disabled')) {
+            var element = $(this);
+            if(PrimeFaces.utils.isActionKey(e) && !element.hasClass('ui-state-disabled')) {
                 $this.select(element.index());
                 e.preventDefault();
             }
@@ -311,25 +312,54 @@ PrimeFaces.widget.TabView = PrimeFaces.widget.DeferredWidget.extend({
         //Scrolling
         if(this.cfg.scrollable) {
             this.navcrollerLeft.on('keydown.tabview', function(e) {
-                var keyCode = $.ui.keyCode,
-                key = e.which;
-
-                if(key === keyCode.SPACE || key === keyCode.ENTER) {
+                if (PrimeFaces.utils.isActionKey(e)) {
                     $this.scroll(100);
                     e.preventDefault();
                 }
             });
 
             this.navcrollerRight.on('keydown.tabview', function(e) {
-                var keyCode = $.ui.keyCode,
-                key = e.which;
-
-                if(key === keyCode.SPACE || key === keyCode.ENTER) {
+                if (PrimeFaces.utils.isActionKey(e)) {
                     $this.scroll(-100);
                     e.preventDefault();
                 }
             });
         }
+    },
+
+    /**
+     * Binds refresh listener to update error highlighting or restore the last active tab on component udpate.
+     * @private
+     */
+    bindRefreshListener: function() {
+        var $this = this;
+        var focusIndex = -1;
+        this.addRefreshListener(function() {
+			
+            // update error highlighting and set focusIndex
+            $(this.jqId + '>ul>li').each(function() {
+                var tabId = $('a', this).attr('href').slice(1);
+                tabId = PrimeFaces.escapeClientId(tabId);
+                if ($(tabId + ' .ui-state-error').length > 0 || $(tabId + ' .ui-message-error-detail').length > 0) {
+                    $(this).addClass('ui-state-error');
+                    if (focusIndex < 0) {
+                        focusIndex = $(this).data('index');
+                    }
+                } else {
+                    $(this).removeClass('ui-state-error');
+                }
+            });
+            
+            // set focusIndex to restore the last active tab
+            // "focusOnError" always takes precedence over "focusOnLastActiveTab"
+            if (focusIndex < 0 || !$this.cfg.focusOnError) {
+                    focusIndex = $this.cfg.selected;
+            }
+
+            if (($this.cfg.focusOnError || $this.cfg.focusOnLastActiveTab) && focusIndex >= 0) {
+               setTimeout(function () {$this.select(focusIndex, true)}, 10);
+            }
+        });
     },
 
     /**
@@ -515,7 +545,7 @@ PrimeFaces.widget.TabView = PrimeFaces.widget.DeferredWidget.extend({
             newActions.attr('aria-hidden', false);
         }
 
-        if(this.cfg.effect) {
+        if(this.cfg.effect && oldPanel.length) {
             oldPanel.hide(this.cfg.effect, null, this.cfg.effectDuration, function() {
                 oldHeader.removeClass('ui-tabs-selected ui-state-active');
                 if(oldActions.length != 0) {
@@ -555,6 +585,7 @@ PrimeFaces.widget.TabView = PrimeFaces.widget.DeferredWidget.extend({
      */
     loadDynamicTab: function(newPanel) {
         var $this = this,
+        tabIndex = newPanel.data('index'),
         options = {
             source: this.id,
             process: this.id,
@@ -562,21 +593,22 @@ PrimeFaces.widget.TabView = PrimeFaces.widget.DeferredWidget.extend({
             params: [
                 {name: this.id + '_contentLoad', value: true},
                 {name: this.id + '_newTab', value: newPanel.attr('id')},
-                {name: this.id + '_tabindex', value: newPanel.data('index')}
+                {name: this.id + '_tabindex', value: tabIndex}
             ],
             onsuccess: function(responseXML, status, xhr) {
                 PrimeFaces.ajax.Response.handle(responseXML, status, xhr, {
                         widget: $this,
                         handle: function(content) {
-                            // hide first
-                            // otherwise it will already be displayed after replacing the content with .html()
+                            // #8994 get new tab reference in case AJAX update removed the old one from DOM
+                            var updatedTab = $this.panelContainer.children().eq(tabIndex);
                             if($this.cfg.effect) {
-                                newPanel.hide();
+                                // hide first, otherwise it will be displayed after replacing the content with .html()
+                                updatedTab.hide();
                             }
-                            newPanel.html(content);
+                            updatedTab.html(content);
 
                             if($this.cfg.cache) {
-                                $this.markAsLoaded(newPanel);
+                                $this.markAsLoaded(updatedTab);
                             }
                         }
                     });
@@ -584,7 +616,9 @@ PrimeFaces.widget.TabView = PrimeFaces.widget.DeferredWidget.extend({
                 return true;
             },
             oncomplete: function() {
-                $this.show(newPanel);
+                // #8994 get new tab reference in case AJAX update removed the old one from DOM
+                var updatedTab = $this.panelContainer.children().eq(tabIndex);
+                $this.show(updatedTab);
             }
         };
 
@@ -734,7 +768,7 @@ PrimeFaces.widget.TabView = PrimeFaces.widget.DeferredWidget.extend({
      * @param {number} index 0-based index of the tab to disable.
      */
     disable: function(index) {
-        this.headerContainer.eq(index).addClass('ui-state-disabled');
+        this.headerContainer.eq(index).addClass('ui-state-disabled').attr('tabindex', '-1');
     },
 
     /**
@@ -742,7 +776,7 @@ PrimeFaces.widget.TabView = PrimeFaces.widget.DeferredWidget.extend({
      * @param {number} index 0-based index of the tab to enable.
      */
     enable: function(index) {
-        this.headerContainer.eq(index).removeClass('ui-state-disabled');
+        this.headerContainer.eq(index).removeClass('ui-state-disabled').attr('tabindex', this.tabindex);
     },
 
     /**

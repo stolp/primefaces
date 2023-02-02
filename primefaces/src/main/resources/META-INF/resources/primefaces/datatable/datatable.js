@@ -30,9 +30,9 @@
  *
  * @typedef {"expand" | "fit"} PrimeFaces.widget.DataTable.ResizeMode Indicates the resize behavior of columns.
  *
- * @typedef {"new" | "add" | "checkbox"} PrimeFaces.widget.DataTable.RowSelectMode Indicates how rows of a DataTable
- * may be selected. `new` always unselects other rows, `add` preserves the currently selected rows, and `checkbox` adds
- * a checkbox next to each row.
+ * @typedef {"new" | "add" | "none"} PrimeFaces.widget.DataTable.RowSelectMode Indicates how rows of a DataTable
+ * may be selected, when clicking on the row itself (not the checkbox / radiobutton from p:column).
+ * `new` always unselects other rows, `add` preserves the currently selected rows, and `none` disables row selection.
  *
  * @typedef {"cancel" | "save"} PrimeFaces.widget.DataTable.RowEditAction When a row is editable: whether to `save` the
  * current contents of the row or `cancel` the row edit and discard all changes.
@@ -173,8 +173,7 @@
  * @prop {PrimeFaces.widget.DataTable.RowEditMode} cfg.rowEditMode Defines the row edit.
  * @prop {PrimeFaces.widget.DataTable.RowExpandMode} cfg.rowExpandMode Defines row expand mode.
  * @prop {boolean} cfg.rowHover Adds hover effect to rows. Hover is always on when selection is enabled.
- * @prop {PrimeFaces.widget.DataTable.RowSelectMode} cfg.rowSelectMode Defines row selection mode for multiple
- * selection.
+ * @prop {PrimeFaces.widget.DataTable.RowSelectMode} cfg.rowSelectMode Defines row selection mode when clicking on the row itself.
  * @prop {string} cfg.rowSelector CSS selector find finding the rows of this DataTable.
  * @prop {boolean} cfg.saveOnCellBlur Saves the changes in cell editing on blur, when set to false changes are
  * discarded.
@@ -555,10 +554,7 @@ PrimeFaces.widget.DataTable = PrimeFaces.widget.DeferredWidget.extend({
             $(this).addClass('ui-state-focus');
         })
         .on('keydown.dataTable', function(e) {
-            var key = e.which,
-            keyCode = $.ui.keyCode;
-
-            if((key === keyCode.ENTER) && $(e.target).is(':not(:input)')) {
+            if((e.key === 'Enter') && $(e.target).is(':not(:input)')) {
                 $(this).trigger('click.dataTable', (e.metaKey||e.ctrlKey));
                 e.preventDefault();
             }
@@ -600,12 +596,13 @@ PrimeFaces.widget.DataTable = PrimeFaces.widget.DeferredWidget.extend({
         if(this.reflowDD && this.cfg.reflow) {
             PrimeFaces.skinSelect(this.reflowDD);
             this.reflowDD.on('change', function(e) {
-                var arrVal = $(this).val().split('_'),
-                    columnHeader = $this.sortableColumns.eq(parseInt(arrVal[0])),
-                    sortOrder = parseInt(arrVal[1]);
+                var selectedOption = $(this).find(":selected");
+                var columnKey = selectedOption.data('columnkey');
+                var sortOrder = selectedOption.data('sortorder');
+                var columnHeader = $this.jq.find(PrimeFaces.escapeClientId(columnKey));
 
-                    columnHeader.data('sortorder', sortOrder);
-                    columnHeader.trigger('click.dataTable');
+                columnHeader.data('sortorder', sortOrder);
+                columnHeader.trigger('click.dataTable');
             });
         }
     },
@@ -725,10 +722,7 @@ PrimeFaces.widget.DataTable = PrimeFaces.widget.DeferredWidget.extend({
         filter.off('keydown keyup')
         .on('keydown', PrimeFaces.utils.blockEnterKey)
         .on('keyup', function(e) {
-            var key = e.which,
-            keyCode = $.ui.keyCode;
-
-            if((key === keyCode.ENTER)) {
+            if(e.key === 'Enter') {
                 $this.filter();
 
                 e.preventDefault();
@@ -763,25 +757,6 @@ PrimeFaces.widget.DataTable = PrimeFaces.widget.DeferredWidget.extend({
             },
             $this.cfg.filterDelay);
         });
-
-        // #89 IE clear "x" button
-        if (PrimeFaces.env.isIE()) {
-            filter.off('mouseup.dataTable').on('mouseup.dataTable', function(e) {
-                var input = $(this),
-                oldValue = input.val();
-
-                if(oldValue == "") {
-                    return;
-                }
-
-                setTimeout(function() {
-                    var newValue = input.val();
-                    if(newValue == "") {
-                        $this.filter();
-                    }
-                }, 1);
-            });
-        }
     },
 
     /**
@@ -802,7 +777,7 @@ PrimeFaces.widget.DataTable = PrimeFaces.widget.DeferredWidget.extend({
     setupSelection: function() {
         this.selectionHolder = this.jqId + '_selection';
         this.cfg.rowSelectMode = this.cfg.rowSelectMode||'new';
-        this.rowSelector = '> tr.ui-widget-content.ui-datatable-selectable';
+        this.rowSelector = 'tr.ui-widget-content.ui-datatable-selectable';
         this.cfg.disabledTextSelection = this.cfg.disabledTextSelection === false ? false : true;
         this.cfg.selectionPageOnly = this.cfg.selectionPageOnly !== false;
         this.rowSelectorForRowClick = this.cfg.rowSelector||'td:not(.ui-column-unselectable):not(.ui-grouped-column),span:not(.ui-c)';
@@ -824,14 +799,23 @@ PrimeFaces.widget.DataTable = PrimeFaces.widget.DeferredWidget.extend({
     bindSelectionEvents: function() {
         if(this.cfg.selectionMode === 'radio') {
             this.bindRadioEvents();
-            this.bindRowEvents();
+
+            if(this.cfg.rowSelectMode !== 'none') {
+                this.bindRowEvents();
+            }
+            else {
+                this.jq.find('tr.ui-datatable-selectable').css('cursor', 'default');
+            }
         }
         else if(this.cfg.selectionMode === 'checkbox') {
             this.bindCheckboxEvents();
             this.updateHeaderCheckbox();
 
-            if(this.cfg.rowSelectMode !== 'checkbox') {
+            if(this.cfg.rowSelectMode !== 'none') {
                 this.bindRowEvents();
+            }
+            else {
+                this.jq.find('tr.ui-datatable-selectable').css('cursor', 'default');
             }
         }
         else {
@@ -895,19 +879,16 @@ PrimeFaces.widget.DataTable = PrimeFaces.widget.DeferredWidget.extend({
             }
         })
         .on('keydown', function(e) {
-            var keyCode = $.ui.keyCode,
-            key = e.which;
-
             if($(e.target).is(':input')) {
                 return;
             }
 
             if($this.focusedRow) {
-                switch(key) {
-                    case keyCode.UP:
-                    case keyCode.DOWN:
+                switch(e.key) {
+                    case 'ArrowUp':
+                    case 'ArrowDown':
                         var rowSelector = 'tr.ui-widget-content.ui-datatable-selectable',
-                        row = key === keyCode.UP ? $this.focusedRow.prevAll(rowSelector).eq(0) : $this.focusedRow.nextAll(rowSelector).eq(0);
+                        row = e.key === 'ArrowUp' ? $this.focusedRow.prevAll(rowSelector).eq(0) : $this.focusedRow.nextAll(rowSelector).eq(0);
 
                         if(row.length) {
                             $this.unhighlightFocusedRow();
@@ -928,8 +909,8 @@ PrimeFaces.widget.DataTable = PrimeFaces.widget.DeferredWidget.extend({
                         e.preventDefault();
                     break;
 
-                    case keyCode.ENTER:
-                    case keyCode.SPACE:
+                    case 'Enter':
+                    case ' ':
                         if($this.focusedRowWithCheckbox) {
                             $this.focusedRow.find('> td.ui-selection-column > div.ui-chkbox > div.ui-chkbox-box').trigger('click.dataTable');
                         }
@@ -1090,14 +1071,14 @@ PrimeFaces.widget.DataTable = PrimeFaces.widget.DeferredWidget.extend({
         checkboxSelector;
 
         if(this.cfg.nativeElements) {
-            checkboxSelector = '> tr.ui-widget-content.ui-datatable-selectable > td.ui-selection-column :checkbox';
+            checkboxSelector = 'tr.ui-widget-content.ui-datatable-selectable > td.ui-selection-column :checkbox';
             this.checkAllToggler = this.thead.find('> tr > th.ui-selection-column > :checkbox');
 
             this.checkAllToggler.on('click', function() {
                 $this.toggleCheckAll();
             });
 
-            this.tbody.off('click.dataTable', checkboxSelector).on('click.dataTable', checkboxSelector, null, function(e) {
+            this.jq.off('click.dataTable', checkboxSelector).on('click.dataTable', checkboxSelector, null, function(e) {
                 var checkbox = $(this);
 
                 if(checkbox.prop('checked'))
@@ -1107,7 +1088,7 @@ PrimeFaces.widget.DataTable = PrimeFaces.widget.DeferredWidget.extend({
             });
         }
         else {
-            checkboxSelector = '> tr.ui-widget-content.ui-datatable-selectable > td.ui-selection-column > div.ui-chkbox > div.ui-chkbox-box';
+            checkboxSelector = 'tr.ui-widget-content.ui-datatable-selectable > td.ui-selection-column > div.ui-chkbox > div.ui-chkbox-box';
             this.checkAllToggler = this.thead.find('> tr > th.ui-selection-column > div.ui-chkbox.ui-chkbox-all > div.ui-chkbox-box');
 
             this.checkAllToggler.on('mouseenter', function() {
@@ -1126,22 +1107,14 @@ PrimeFaces.widget.DataTable = PrimeFaces.widget.DeferredWidget.extend({
                 }
             })
             .on('keydown', function(e) {
-                var keyCode = $.ui.keyCode,
-                key = e.which;
-
-                switch(key) {
-                    case keyCode.ENTER:
-                    case keyCode.SPACE:
-                        if(!$(this).hasClass('ui-state-disabled')) {
-                            $this.toggleCheckAll();
-                        }
-                    break;
-                    default:
-                    break;
+                if (PrimeFaces.utils.isActionKey(e)) {
+                    if(!$(this).hasClass('ui-state-disabled')) {
+                        $this.toggleCheckAll();
+                    }
                 }
             });
 
-            this.tbody.off('mouseenter.dataTable mouseleave.dataTable click.dataTable', checkboxSelector)
+            this.jq.off('mouseenter.dataTable mouseleave.dataTable click.dataTable', checkboxSelector)
                         .on('mouseenter.dataTable', checkboxSelector, null, function() {
                             $(this).addClass('ui-state-hover');
                         })
@@ -1245,10 +1218,7 @@ PrimeFaces.widget.DataTable = PrimeFaces.widget.DeferredWidget.extend({
                 $this.toggleExpansion($(this));
             })
             .on('keydown.datatable-expansion', togglerSelector, null, function(e) {
-                var key = e.which,
-                keyCode = $.ui.keyCode;
-
-                if((key === keyCode.ENTER)) {
+                if(e.key === 'Enter') {
                     $this.toggleExpansion($(this));
                     e.preventDefault();
                 }
@@ -1382,7 +1352,9 @@ PrimeFaces.widget.DataTable = PrimeFaces.widget.DeferredWidget.extend({
             }
         }
 
-        this.fixColumnWidths();
+        if (!this.cfg.reflow) {
+            this.fixColumnWidths();
+        }
 
         if(this.cfg.scrollWidth) {
             if(this.percentageScrollWidth)
@@ -1514,6 +1486,7 @@ PrimeFaces.widget.DataTable = PrimeFaces.widget.DeferredWidget.extend({
         clone.find('th').each(function() {
             var header = $(this);
             header.attr('id', header.attr('id') + '_clone');
+            header.removeAttr('aria-label');
             header.children().not('.ui-column-title').remove();
             header.children('.ui-column-title').children().remove();
         });
@@ -1557,10 +1530,7 @@ PrimeFaces.widget.DataTable = PrimeFaces.widget.DeferredWidget.extend({
                 $(PrimeFaces.escapeClientId($(this).data('original'))).addClass('ui-state-focus');
             })
             .on('keydown.dataTable', function(e) {
-                var key = e.which,
-                keyCode = $.ui.keyCode;
-
-                if((key === keyCode.ENTER) && $(e.target).is(':not(:input)')) {
+                if((e.key === 'Enter') && $(e.target).is(':not(:input)')) {
                     $(PrimeFaces.escapeClientId($(this).data('original'))).trigger('click.dataTable', (e.metaKey||e.ctrlKey));
                     e.preventDefault();
                 }
@@ -2380,7 +2350,7 @@ PrimeFaces.widget.DataTable = PrimeFaces.widget.DeferredWidget.extend({
         if($(event.target).is(this.rowSelectorForRowClick)) {
             var row = $(rowElement),
             selected = row.hasClass('ui-state-highlight'),
-            metaKey = event.metaKey||event.ctrlKey,
+            metaKey = event.metaKey||event.ctrlKey||PrimeFaces.env.isTouchable(this.cfg),
             shiftKey = event.shiftKey;
 
             this.assignFocusedRow(row);
@@ -2447,6 +2417,7 @@ PrimeFaces.widget.DataTable = PrimeFaces.widget.DeferredWidget.extend({
      * @param {JQuery} rowElement Row that was clicked.
      * @param {PrimeFaces.widget.DataTable.CmSelectionMode} cmSelMode The current selection mode.
      * @param {() => void} [fnShowMenu] Optional callback function invoked when the menu was opened.
+     * @return {boolean} true to hide the native browser context menu, false to display it
      */
     onRowRightClick: function(event, rowElement, cmSelMode, fnShowMenu) {
         var row = $(rowElement),
@@ -2466,6 +2437,8 @@ PrimeFaces.widget.DataTable = PrimeFaces.widget.DeferredWidget.extend({
         if(this.cfg.disabledTextSelection) {
             PrimeFaces.clearSelection();
         }
+
+        return this.hasBehavior('contextMenu');
     },
 
     /**
@@ -2761,7 +2734,7 @@ PrimeFaces.widget.DataTable = PrimeFaces.widget.DeferredWidget.extend({
      * irrespective of whether they are on the currently shown page.
      */
     unselectAllRows: function() {
-        var selectedRows = this.tbody.children('tr.ui-state-highlight'),
+        var selectedRows = this.jq.find('tr.ui-state-highlight'),
         checkboxSelectionEnabled = this.isCheckboxSelectionEnabled(),
         radioSelectionEnabled = this.isRadioSelectionEnabled();
 
@@ -2834,7 +2807,7 @@ PrimeFaces.widget.DataTable = PrimeFaces.widget.DeferredWidget.extend({
     toggleCheckAll: function() {
         var shouldCheckAll = true;
         if(this.cfg.nativeElements) {
-            var checkboxes = this.tbody.find('> tr.ui-datatable-selectable > td.ui-selection-column > :checkbox:visible'),
+            var checkboxes = this.jq.find('tr.ui-datatable-selectable > td.ui-selection-column > :checkbox:visible'),
             checked = this.checkAllToggler.prop('checked'),
             $this = this;
 
@@ -2853,7 +2826,7 @@ PrimeFaces.widget.DataTable = PrimeFaces.widget.DeferredWidget.extend({
             });
         }
         else {
-            var checkboxes = this.tbody.find('> tr.ui-datatable-selectable > td.ui-selection-column > div.ui-chkbox > div.ui-chkbox-box:visible'),
+            var checkboxes = this.jq.find('tr.ui-datatable-selectable > td.ui-selection-column > div.ui-chkbox > div.ui-chkbox-box:visible'),
             checked = this.checkAllToggler.attr('aria-checked') === "true";
             $this = this;
 
@@ -3186,9 +3159,8 @@ PrimeFaces.widget.DataTable = PrimeFaces.widget.DeferredWidget.extend({
             // GitHub #433 Allow ENTER to submit ESC to cancel row editor
             $(document).off("keydown.datatable", "tr.ui-row-editing")
                         .on("keydown.datatable", "tr.ui-row-editing", function(e) {
-                            var keyCode = $.ui.keyCode;
-                            switch (e.which) {
-                                case keyCode.ENTER:
+                            switch (e.key) {
+                                case 'Enter':
                                     var target = $(e.target);
                                     // GitHub #7028
                                     if(target.is("textarea")) {
@@ -3196,7 +3168,7 @@ PrimeFaces.widget.DataTable = PrimeFaces.widget.DeferredWidget.extend({
                                     }
                                     $(this).closest("tr").find(".ui-row-editor-check").trigger("click");
                                     return false; // prevents executing other event handlers (adding new row to the table)
-                                case keyCode.ESCAPE:
+                                case 'Escape':
                                     $(this).closest("tr").find(".ui-row-editor-close").trigger("click");
                                     return false;
                                 default:
@@ -3242,7 +3214,7 @@ PrimeFaces.widget.DataTable = PrimeFaces.widget.DeferredWidget.extend({
                             if(target.is(ignoredOverlay) || target.closest(ignoredOverlay).length)
                                 return;
 
-                            if($.datepicker._datepickerShowing || $('.p-datepicker-panel:visible').length)
+                            if($.datepicker && ($.datepicker._datepickerShowing || $('.p-datepicker-panel:visible').length))
                                 return;
 
                             if($this.cfg.saveOnCellBlur)
@@ -3464,12 +3436,11 @@ PrimeFaces.widget.DataTable = PrimeFaces.widget.DeferredWidget.extend({
                 cell.data('edit-events-bound', true);
 
                 inputs.on('keydown.datatable-cell', function(e) {
-                        var keyCode = $.ui.keyCode,
-                        shiftKey = e.shiftKey,
-                        key = e.which,
+                        var shiftKey = e.shiftKey,
+                        key = e.key,
                         input = $(this);
 
-                        if(key === keyCode.ENTER) {
+                        if(key === 'Enter') {
                             // GitHub #7028
                             if(input.is("textarea")) {
                                 return true;
@@ -3479,7 +3450,7 @@ PrimeFaces.widget.DataTable = PrimeFaces.widget.DeferredWidget.extend({
 
                             e.preventDefault();
                         }
-                        else if(key === keyCode.TAB) {
+                        else if(key === 'Tab') {
                             if(multi) {
                                 var focusIndex = shiftKey ? input.index() - 1 : input.index() + 1;
 
@@ -3495,7 +3466,7 @@ PrimeFaces.widget.DataTable = PrimeFaces.widget.DeferredWidget.extend({
 
                             e.preventDefault();
                         }
-                        else if(key === keyCode.ESCAPE) {
+                        else if(key === 'Escape') {
                             $this.doCellEditCancelRequest(cell);
                             e.preventDefault();
                         }
@@ -3544,6 +3515,9 @@ PrimeFaces.widget.DataTable = PrimeFaces.widget.DeferredWidget.extend({
      * @param {JQuery} cell A cell (`TD`) in edit mode.
      */
     saveCell: function(cell) {
+        if (!cell) {
+            return;
+        }
         var inputs = cell.find('div.ui-cell-editor-input :input:enabled'),
         changed = false,
         valid = cell.data('valid'),
@@ -3965,7 +3939,21 @@ PrimeFaces.widget.DataTable = PrimeFaces.widget.DeferredWidget.extend({
      */
     clearFilters: function() {
         this.thead.find('> tr > th.ui-filter-column > .ui-column-filter').val('');
-        this.thead.find('> tr > th.ui-filter-column > .ui-column-customfilter :input').val('');
+        this.thead.find('> tr > th.ui-filter-column > .ui-column-customfilter').each(function() {
+            var widgetElement = $(this).find('.ui-widget');
+            if (widgetElement.length > 0) {
+                var widget = PrimeFaces.getWidgetById(widgetElement.attr('id'));
+                if (widget && typeof widget.resetValue === 'function') {
+                    widget.resetValue(true);
+                }
+                else {
+                    $(this).find(':input').val('');
+                }
+            }
+            else {
+                $(this).find(':input').val('');
+            }
+        });
         $(this.jqId + '\\:globalFilter').val('');
 
         this.filter();
@@ -4178,10 +4166,6 @@ PrimeFaces.widget.DataTable = PrimeFaces.widget.DeferredWidget.extend({
         }
 
         var title = columnHeader.children('.ui-column-title');
-        if(PrimeFaces.env.isIE()) {
-            title.css('display', 'none');
-        }
-
         var nextColumnHeader = columnHeader.nextAll(':visible:first');
 
         if(this.cfg.liveResize) {
@@ -4197,10 +4181,6 @@ PrimeFaces.widget.DataTable = PrimeFaces.widget.DeferredWidget.extend({
 
         var minWidth = parseInt(columnHeader.css('min-width'));
         minWidth = (minWidth == 0) ? 15 : minWidth;
-
-        if(PrimeFaces.env.isIE()) {
-            title.css('display', '');
-        }
 
         if((newWidth > minWidth && nextColumnWidth > minWidth) || (expandMode && newWidth > minWidth)) {
             if(expandMode) {
@@ -4899,6 +4879,10 @@ PrimeFaces.widget.DataTable = PrimeFaces.widget.DeferredWidget.extend({
                     $this.tbody.children('tr.ui-datatable-empty-message').remove();
                 }
 
+                if ($this.isCheckboxSelectionEnabled()) {
+                    $this.enableHeaderCheckbox();
+                }
+
                 return true;
             }
         };
@@ -4961,18 +4945,19 @@ PrimeFaces.widget.DataTable = PrimeFaces.widget.DeferredWidget.extend({
      */
     updateReflowDD: function(columnHeader, sortOrder) {
         if(this.reflowDD && this.cfg.reflow) {
-            var options = this.reflowDD.children('option'),
-            orderIndex = sortOrder > 0 ? 0 : 1;
-            var header = columnHeader.text();
-            var filterby = header.indexOf("Filter by");
-            if (filterby !== -1) {
-                header = header.substring(0, filterby);
-            }
-            header = $.escapeSelector(header);
+            sortOrder = sortOrder > 0 ? 0 : 1;
 
-            options.each(function() {
-                var optionText = $.escapeSelector(this.text);
-                this.selected = optionText.startsWith(header) && this.value.endsWith("_" + orderIndex);
+            var columnHeader = columnHeader.text();
+            var filterby = columnHeader.indexOf("Filter by");
+            if (filterby !== -1) {
+                columnHeader = columnHeader.substring(0, filterby);
+            }
+            columnHeader = $.escapeSelector(columnHeader);
+
+            this.reflowDD.children('option').each(function() {
+                var optionLabel = $.escapeSelector(this.text);
+                var optionSortOrder = $(this).data('sortorder');
+                this.selected = optionLabel.startsWith(columnHeader) && optionSortOrder == sortOrder;
             });
         }
     },
@@ -4983,6 +4968,20 @@ PrimeFaces.widget.DataTable = PrimeFaces.widget.DeferredWidget.extend({
      */
     groupRows: function() {
         var rows = this.tbody.children('tr');
+
+        // see #8027
+        // remember the original column index
+        // columns are removed because of grouping and mapping to the header isnt possible anymore in #updateColumnsView
+        if(this.headers && !this.hasColGroup()) {
+            for(var i = 0; i < this.headers.length; i++) {
+                var header = this.headers.eq(i),
+                    index = header.index(),
+                    column = this.tbody.find('> tr:not(.ui-expanded-row-content) > td:nth-child(' + (index + 1) + ')');
+
+                column.data('ci', index);
+            }
+        }
+ 
         for(var i = 0; i < this.cfg.groupColumnIndexes.length; i++) {
             this.groupRow(this.cfg.groupColumnIndexes[i], rows);
         }
@@ -5003,6 +5002,7 @@ PrimeFaces.widget.DataTable = PrimeFaces.widget.DeferredWidget.extend({
             var row = rows.eq(i);
             var column = row.children('td').eq(colIndex);
             var columnData = column.text();
+
             if(rowGroupCellData != columnData) {
                 groupStartIndex = i;
                 rowGroupCellData = columnData;
@@ -5219,15 +5219,22 @@ PrimeFaces.widget.DataTable = PrimeFaces.widget.DeferredWidget.extend({
 
         // update the visibility of columns but ignore expanded rows and GitHub #7255 grouped headers
         if(this.headers && !this.hasColGroup()) {
-            for(var i = 0; i < this.headers.length; i++) {
-                var header = this.headers.eq(i),
-                    col = this.tbody.find('> tr:not(.ui-expanded-row-content) > td:nth-child(' + (header.index() + 1) + ')');
+            var rows = this.tbody.find('> tr:not(.ui-expanded-row-content)');
+            for(var i = 0; i < rows.length; i++) {
+                var row = rows.eq(i);
+                var columns = row.find('td');
+                
+                for(var j = 0; j < columns.length; j++) {
+                    var column = columns.eq(j);
+                    var columnIndex = column.data('ci') || j;
 
-                if(header.hasClass('ui-helper-hidden')) {
-                    col.addClass('ui-helper-hidden');
-                }
-                else {
-                    col.removeClass('ui-helper-hidden');
+                    var header = this.headers.eq(columnIndex);
+                    if(header.hasClass('ui-helper-hidden')) {
+                        column.addClass('ui-helper-hidden');
+                    }
+                    else {
+                        column.removeClass('ui-helper-hidden');
+                    }
                 }
             }
         }

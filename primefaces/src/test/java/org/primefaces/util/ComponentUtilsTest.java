@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,9 +23,11 @@
  */
 package org.primefaces.util;
 
-import java.util.Arrays;
+import javax.faces.component.TransientStateHelper;
 import javax.faces.component.UIComponent;
 import javax.faces.component.UIPanel;
+import javax.faces.context.FacesContext;
+
 import org.junit.jupiter.api.Assertions;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -48,7 +50,8 @@ public class ComponentUtilsTest {
 
     @Test
     public void createContentDisposition() {
-        assertEquals("attachment;filename=\"Test%20Spaces.txt\"; filename*=UTF-8''Test%20Spaces.txt", ComponentUtils.createContentDisposition("attachment", "Test Spaces.txt"));
+        assertEquals("attachment;filename=\"Test%20Spaces.txt\"; filename*=UTF-8''Test%20Spaces.txt",
+                ComponentUtils.createContentDisposition("attachment", "Test Spaces.txt"));
     }
 
     @Test
@@ -74,6 +77,7 @@ public class ComponentUtilsTest {
     public void shouldRenderFacet_facetChildrenRenderedFalse() {
         UIComponent children = mock(AccordionPanel.class);
         when(children.isRendered()).thenReturn(false);
+        when(children.getTransientStateHelper()).thenReturn(new TransientStateHelperMock());
 
         UIComponent facet = new UIPanel();
         facet.setRendered(true);
@@ -86,6 +90,7 @@ public class ComponentUtilsTest {
     public void shouldRenderFacet_facetChildrenRenderedTrue() {
         UIComponent children = mock(AccordionPanel.class);
         when(children.isRendered()).thenReturn(true);
+        when(children.getTransientStateHelper()).thenReturn(new TransientStateHelperMock());
 
         UIComponent facet = new UIPanel();
         facet.setRendered(true);
@@ -98,11 +103,40 @@ public class ComponentUtilsTest {
     public void shouldRenderFacet_facetChildrenFacetRenderedFalse() {
         UIComponent children = mock(AccordionPanel.class);
         when(children.isRendered()).thenReturn(true);
+        when(children.getTransientStateHelper()).thenReturn(new TransientStateHelperMock());
 
         UIComponent facet = new UIPanel();
         facet.setRendered(false);
         facet.getChildren().add(children);
 
         Assertions.assertFalse(ComponentUtils.shouldRenderFacet(facet));
+    }
+
+    class TransientStateHelperMock implements TransientStateHelper {
+
+        @Override
+        public Object getTransient(Object o) {
+            return null;
+        }
+
+        @Override
+        public Object getTransient(Object o, Object o1) {
+            return null;
+        }
+
+        @Override
+        public Object putTransient(Object o, Object o1) {
+            return null;
+        }
+
+        @Override
+        public Object saveTransientState(FacesContext facesContext) {
+            return null;
+        }
+
+        @Override
+        public void restoreTransientState(FacesContext facesContext, Object o) {
+
+        }
     }
 }

@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -35,8 +35,7 @@ import java.util.Map;
 
 public class PrimeExceptionHandlerTest extends PrimeExceptionHandler {
 
-    public PrimeExceptionHandlerTest()
-    {
+    public PrimeExceptionHandlerTest() {
         super(null);
     }
 
@@ -72,8 +71,7 @@ public class PrimeExceptionHandlerTest extends PrimeExceptionHandler {
         Assertions.assertEquals("", errorPage);
     }
 
-    private Map<String, String> getErrorPages()
-    {
+    private Map<String, String> getErrorPages() {
         Map<String, String> errorPages = new HashMap<>();
         errorPages.put(FacesException.class.getName(), FacesException.class.getName());
         errorPages.put(IOException.class.getName(), IOException.class.getName());

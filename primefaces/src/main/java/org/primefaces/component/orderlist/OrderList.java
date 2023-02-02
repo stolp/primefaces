@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,9 +23,12 @@
  */
 package org.primefaces.component.orderlist;
 
-import java.util.*;
-import javax.faces.FacesException;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
+import javax.faces.FacesException;
 import javax.faces.application.ResourceDependency;
 import javax.faces.context.FacesContext;
 import javax.faces.event.AjaxBehaviorEvent;
@@ -47,9 +50,9 @@ public class OrderList extends OrderListBase {
 
     public static final String COMPONENT_TYPE = "org.primefaces.component.OrderList";
 
-    public static final String CONTAINER_CLASS = "ui-orderlist ui-grid ui-widget";
+    public static final String CONTAINER_CLASS = "ui-orderlist ui-widget";
     public static final String LIST_CLASS = "ui-widget-content ui-orderlist-list";
-    public static final String CONTROLS_CLASS = "ui-orderlist-controls ui-g-12 ui-md-2";
+    public static final String CONTROLS_CLASS = "ui-orderlist-controls";
     public static final String CAPTION_CLASS = "ui-orderlist-caption ui-widget-header ui-corner-top";
     public static final String ITEM_CLASS = "ui-orderlist-item ui-corner-all";
     public static final String MOVE_UP_BUTTON_CLASS = "ui-orderlist-button-move-up";
@@ -60,6 +63,7 @@ public class OrderList extends OrderListBase {
     public static final String MOVE_DOWN_BUTTON_ICON_CLASS = "ui-icon ui-icon-arrow-1-s";
     public static final String MOVE_TOP_BUTTON_ICON_CLASS = "ui-icon ui-icon-arrowstop-1-n";
     public static final String MOVE_BOTTOM_BUTTON_ICON_CLASS = "ui-icon ui-icon-arrowstop-1-s";
+    public static final String CONTROLS_RIGHT_CLASS = "ui-orderlist-controls-right";
 
     private static final Map<String, Class<? extends BehaviorEvent>> BEHAVIOR_EVENT_MAPPING = MapBuilder.<String, Class<? extends BehaviorEvent>>builder()
             .put("select", SelectEvent.class)

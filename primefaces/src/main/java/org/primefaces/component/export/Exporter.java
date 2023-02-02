@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,24 +23,28 @@
  */
 package org.primefaces.component.export;
 
-import javax.faces.component.UIComponent;
-import javax.faces.context.FacesContext;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.List;
+
 import javax.faces.FacesException;
 import javax.faces.component.EditableValueHolder;
+import javax.faces.component.UIComponent;
 import javax.faces.component.UISelectMany;
 import javax.faces.component.ValueHolder;
 import javax.faces.component.html.HtmlCommandLink;
 import javax.faces.component.html.HtmlGraphicImage;
+import javax.faces.context.FacesContext;
 import javax.faces.convert.Converter;
+
 import org.primefaces.component.celleditor.CellEditor;
 import org.primefaces.component.overlaypanel.OverlayPanel;
 import org.primefaces.util.Constants;
 
 public abstract class Exporter<T extends UIComponent> {
+
+    private ExportConfiguration exportConfiguration;
 
     public abstract void export(FacesContext facesContext, List<T> component, OutputStream outputStream,
             ExportConfiguration exportConfiguration) throws IOException;
@@ -153,5 +157,13 @@ public abstract class Exporter<T extends UIComponent> {
                 return Constants.EMPTY_STRING;
             }
         }
+    }
+
+    public ExportConfiguration getExportConfiguration() {
+        return exportConfiguration;
+    }
+
+    public void setExportConfiguration(ExportConfiguration exportConfiguration) {
+        this.exportConfiguration = exportConfiguration;
     }
 }

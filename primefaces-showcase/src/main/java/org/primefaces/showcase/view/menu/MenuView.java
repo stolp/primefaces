@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,22 +23,27 @@
  */
 package org.primefaces.showcase.view.menu;
 
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.concurrent.TimeUnit;
+
+import javax.annotation.PostConstruct;
+import javax.faces.application.FacesMessage;
+import javax.faces.context.ExternalContext;
+import javax.faces.context.FacesContext;
+import javax.faces.view.ViewScoped;
+import javax.inject.Named;
+
 import org.primefaces.model.menu.DefaultMenuItem;
 import org.primefaces.model.menu.DefaultMenuModel;
 import org.primefaces.model.menu.DefaultSubMenu;
 import org.primefaces.model.menu.MenuModel;
 
-import javax.annotation.PostConstruct;
-import javax.enterprise.context.RequestScoped;
-import javax.faces.application.FacesMessage;
-import javax.faces.context.ExternalContext;
-import javax.faces.context.FacesContext;
-import javax.inject.Named;
-import java.io.IOException;
-
 @Named
-@RequestScoped
-public class MenuView {
+@ViewScoped
+public class MenuView implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     private MenuModel model;
 
@@ -72,6 +77,7 @@ public class MenuView {
                 .value("Delete")
                 .icon("pi pi-times")
                 .command("#{menuView.delete}")
+                .update("messages")
                 .build();
         firstSubmenu.getElements().add(item);
 
@@ -119,6 +125,21 @@ public class MenuView {
     public void delete() {
         FacesMessage message = new FacesMessage(FacesMessage.SEVERITY_WARN, "Delete", "Data deleted");
         FacesContext.getCurrentInstance().addMessage(null, message);
+    }
+
+    public void sleepAndSave() throws InterruptedException {
+        TimeUnit.SECONDS.sleep(1);
+        save();
+    }
+
+    public void sleepAndUpdate() throws InterruptedException {
+        TimeUnit.SECONDS.sleep(1);
+        update();
+    }
+
+    public void sleepAndDelete() throws InterruptedException {
+        TimeUnit.SECONDS.sleep(1);
+        delete();
     }
 
     public void addMessage(String summary, String detail) {

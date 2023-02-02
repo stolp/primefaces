@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,7 +30,6 @@ import org.primefaces.selenium.AbstractPrimePage;
 import org.primefaces.selenium.AbstractPrimePageTest;
 import org.primefaces.selenium.component.AccordionPanel;
 import org.primefaces.selenium.component.CommandButton;
-import org.primefaces.selenium.component.TabView;
 import org.primefaces.selenium.component.model.Tab;
 
 import java.util.List;
@@ -49,10 +48,10 @@ public class AccordionPanel001Test extends AbstractPrimePageTest {
         Assertions.assertEquals(3, tabs.size());
         AtomicInteger cnt = new AtomicInteger(0);
         tabs.forEach(tab -> {
-                    Assertions.assertNotNull(tab.getHeader());
-                    Assertions.assertNotNull(tab.getContent());
-                    Assertions.assertEquals(cnt.getAndIncrement(), tab.getIndex());
-                });
+            Assertions.assertNotNull(tab.getHeader());
+            Assertions.assertNotNull(tab.getContent());
+            Assertions.assertEquals(cnt.getAndIncrement(), tab.getIndex());
+        });
         Assertions.assertEquals("Panel1", tabs.get(0).getTitle());
         Assertions.assertEquals("Panel2", tabs.get(1).getTitle());
 
@@ -73,6 +72,7 @@ public class AccordionPanel001Test extends AbstractPrimePageTest {
     }
 
     public static class Page extends AbstractPrimePage {
+
         @FindBy(id = "form:accordionpanel")
         AccordionPanel accordionPanel;
 

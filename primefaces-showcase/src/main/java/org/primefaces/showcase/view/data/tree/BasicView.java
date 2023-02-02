@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,6 +30,8 @@ import org.primefaces.model.TreeNode;
 import javax.annotation.PostConstruct;
 import javax.inject.Named;
 import java.io.Serializable;
+import java.util.Locale;
+import org.primefaces.util.LangUtils;
 
 @Named("treeBasicView")
 @ViewScoped
@@ -69,4 +71,16 @@ public class BasicView implements Serializable {
     public TreeNode getRoot() {
         return root;
     }
+
+    public boolean customFilter(TreeNode treeNode, Object filter, Locale locale) {
+        if (treeNode.getData() == null || filter == null) {
+            return true;
+        }
+        String filterText = filter.toString().trim().toLowerCase(locale);
+        if (LangUtils.isBlank(filterText)) {
+            return true;
+        }
+        return ((String) treeNode.getData()).toLowerCase(locale).contains(filterText);
+    }
+
 }

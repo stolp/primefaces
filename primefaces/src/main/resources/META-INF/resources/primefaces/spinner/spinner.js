@@ -30,6 +30,7 @@
  * @prop {string} cfg.suffix Suffix added to the displayed value.
  * @prop {string} cfg.thousandSeparator Character for the integral part of the number that separates each group of three
  * digits.
+ * @prop {boolean} cfg.modifyValueOnWheel Increment or decrement the element value with the mouse wheel if true.
  */
 PrimeFaces.widget.Spinner = PrimeFaces.widget.BaseWidget.extend({
 
@@ -52,6 +53,7 @@ PrimeFaces.widget.Spinner = PrimeFaces.widget.BaseWidget.extend({
           this.cfg.decimalSeparator = '.';
         }
         this.cursorOffset = this.cfg.prefix ? this.cfg.prefix.length: 0;
+        this.cfg.modifyValueOnWheel = this.cfg.modifyValueOnWheel !== false;
 
         var inputValue = this.input.val();
 
@@ -73,8 +75,6 @@ PrimeFaces.widget.Spinner = PrimeFaces.widget.BaseWidget.extend({
 
         this.format();
 
-        this.addARIA();
-
         if(this.input.prop('disabled')||this.input.prop('readonly')) {
             return;
         }
@@ -84,6 +84,7 @@ PrimeFaces.widget.Spinner = PrimeFaces.widget.BaseWidget.extend({
         this.input.data(PrimeFaces.CLIENT_ID_DATA, this.id);
 
         PrimeFaces.skinInput(this.input);
+        this.addARIA();
     },
 
     /**
@@ -111,7 +112,7 @@ PrimeFaces.widget.Spinner = PrimeFaces.widget.BaseWidget.extend({
             })
             .on('mousedown.spinner', function(e) {
                 // only act on left click
-                if (e.which !== 1) {
+                if (e.button !== 0) {
                     return;
                 }
                 var element = $(this),
@@ -130,43 +131,39 @@ PrimeFaces.widget.Spinner = PrimeFaces.widget.BaseWidget.extend({
         });
 
         this.input.on('keydown.spinner', function (e) {
-            var keyCode = $.ui.keyCode;
-
-            switch(e.which) {
-                case keyCode.UP:
+            switch(e.key) {
+                case 'ArrowUp':
                     $this.spin(1);
                 break;
 
-                case keyCode.DOWN:
+                case 'ArrowDown':
                     $this.spin(-1);
                 break;
 
-                case keyCode.ENTER:
+                case 'Enter':
                     $this.updateValue();
                     $this.format();
                 break;
-
-                case keyCode.BACKSPACE:
-                case keyCode.DELETE:
-                case keyCode.LEFT:
-                case keyCode.RIGHT:
-                case keyCode.TAB:
-                    return;
 
                 default:
                     //do nothing
                 break;
             }
 
+            // #8958 allow TAB, F1, F12 etc
+            if (PrimeFaces.utils.ignoreFilterKey(e)) {
+                return;
+            }
+
             /* Github #1964 do not allow minus */
-            var isNegative = event.key === '-';
+            var isNegative = e.key === '-';
             if ($this.cfg.min >= 0 && isNegative) {
                 e.preventDefault();
                 return;
             }
 
             /* GitHub #5579 do not allow decimal separator for integers */
-            var isDecimalSeparator = event.key === $this.cfg.decimalSeparator;
+            var isDecimalSeparator = e.key === $this.cfg.decimalSeparator;
             if (isDecimalSeparator && $this.cfg.precision === 0) {
                 e.preventDefault();
                 return;
@@ -174,8 +171,8 @@ PrimeFaces.widget.Spinner = PrimeFaces.widget.BaseWidget.extend({
 
             /* GitHub #5579 prevent non numeric characters and duplicate separators */
             var value = $(this).val();
-            var isNumber = isFinite(event.key);
-            var isThousandsSeparator = event.key === $this.cfg.thousandSeparator;
+            var isNumber = isFinite(e.key);
+            var isThousandsSeparator = e.key === $this.cfg.thousandSeparator;
             if ((isNegative && value.indexOf('-') != -1)
                     || (isDecimalSeparator && value.indexOf($this.cfg.decimalSeparator)!= -1)
                     || (isThousandsSeparator && value.indexOf($this.cfg.thousandSeparator)!= -1)) {
@@ -191,12 +188,7 @@ PrimeFaces.widget.Spinner = PrimeFaces.widget.BaseWidget.extend({
         .on('keyup.spinner', function (e) {
             $this.updateValue();
 
-            var keyCode = $.ui.keyCode;
-
-            /* Github #2636 */
-            var checkForIE = (PrimeFaces.env.isIE(11) || PrimeFaces.env.isLtIE(11)) && (e.which === keyCode.ENTER);
-
-            if(e.which === keyCode.UP||e.which === keyCode.DOWN||checkForIE) {
+            if(e.key === 'ArrowUp' || e.key === 'ArrowDown') {
                 $this.input.trigger('change');
                 $this.format();
             }
@@ -205,7 +197,7 @@ PrimeFaces.widget.Spinner = PrimeFaces.widget.BaseWidget.extend({
             $this.format();
         })
         .on('mousewheel.spinner', function(event, delta) {
-            if($this.input.is(':focus')) {
+            if($this.cfg.modifyValueOnWheel && $this.input.is(':focus')) {
                 if(delta > 0)
                     $this.spin(1);
                 else
@@ -245,7 +237,14 @@ PrimeFaces.widget.Spinner = PrimeFaces.widget.BaseWidget.extend({
     spin: function(dir) {
         var step = this.cfg.step * dir,
         currentValue = this.value ? this.value : 0,
-        newValue = this.parseValue(currentValue + step);
+        newValue = currentValue + step;
+        
+        if (Number.isSafeInteger(step)) {
+            // GitHub #8631 round to nearest step
+            newValue = (dir > 0) ? Math.floor(newValue / step) * step : Math.ceil(newValue / step) * step;
+        }
+
+        newValue = this.parseValue(newValue);
 
         if(this.cfg.maxlength !== undefined && newValue.toString().length > this.cfg.maxlength) {
             newValue = currentValue;
@@ -370,7 +369,6 @@ PrimeFaces.widget.Spinner = PrimeFaces.widget.BaseWidget.extend({
      */
     addARIA: function() {
         this.input.attr('role', 'spinbutton');
-        this.input.attr('aria-multiline', false);
         this.input.attr('aria-valuenow', this.getValue());
 
         if(this.cfg.min !== undefined)

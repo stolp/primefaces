@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -31,6 +31,7 @@ import javax.faces.context.ResponseWriter;
 
 import org.primefaces.component.charts.ChartRenderer;
 import org.primefaces.model.charts.pie.PieChartOptions;
+import org.primefaces.util.ChartUtils;
 import org.primefaces.util.WidgetBuilder;
 
 public class PieChartRenderer extends ChartRenderer {
@@ -38,11 +39,7 @@ public class PieChartRenderer extends ChartRenderer {
     @Override
     public void encodeEnd(FacesContext context, UIComponent component) throws IOException {
         PieChart chart = (PieChart) component;
-        String clientId = chart.getClientId(context);
-        String style = chart.getStyle();
-        String styleClass = chart.getStyleClass();
-
-        encodeMarkup(context, clientId, style, styleClass);
+        encodeMarkup(context, chart);
         encodeScript(context, chart);
     }
 
@@ -67,14 +64,14 @@ public class PieChartRenderer extends ChartRenderer {
         PieChartOptions pieOptions = (PieChartOptions) options;
 
         writer.write(",\"options\":{");
-
-        writer.write("\"animation\":{");
+        encodeResponsive(context, pieOptions, false);
+        writer.write(",\"animation\":{");
         writer.write("\"animateRotate\":" + pieOptions.isAnimateRotate());
         writer.write(",\"animateScale\":" + pieOptions.isAnimateScale());
         writer.write("}");
 
-        if (pieOptions.getCutoutPercentage() != null) {
-            writer.write(",\"cutoutPercentage\":" + pieOptions.getCutoutPercentage());
+        if (pieOptions.getCutout() != null) {
+            ChartUtils.writeDataValue(writer, "cutout", pieOptions.getCutout(), true);
         }
 
         if (pieOptions.getRotation() != null) {

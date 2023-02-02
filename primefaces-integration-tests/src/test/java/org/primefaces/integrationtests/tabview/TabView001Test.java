@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -48,10 +48,10 @@ public class TabView001Test extends AbstractPrimePageTest {
         Assertions.assertEquals(3, tabs.size());
         AtomicInteger cnt = new AtomicInteger(0);
         tabs.forEach(tab -> {
-                    Assertions.assertNotNull(tab.getHeader());
-                    Assertions.assertNotNull(tab.getContent());
-                    Assertions.assertEquals(tab.getIndex(), cnt.getAndIncrement());
-                });
+            Assertions.assertNotNull(tab.getHeader());
+            Assertions.assertNotNull(tab.getContent());
+            Assertions.assertEquals(tab.getIndex(), cnt.getAndIncrement());
+        });
         Assertions.assertEquals("Tab1", tabs.get(0).getTitle());
         Assertions.assertEquals("Tab2", tabs.get(1).getTitle());
 
@@ -68,6 +68,7 @@ public class TabView001Test extends AbstractPrimePageTest {
     }
 
     public static class Page extends AbstractPrimePage {
+
         @FindBy(id = "form:tabview")
         TabView tabView;
 

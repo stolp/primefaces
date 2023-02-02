@@ -13,14 +13,10 @@ List of Plugins
 - Touch Punch (https://github.com/RWAP/jquery-ui-touch-punch custom fork of https://github.com/furf/jquery-ui-touch-punch)
 
 
-
 Extensions:
 
 jquery.autosize.js:
 - Added fix to autosize from https://github.com/jackmoore/autosize/issues/225
-
-jquery.colorpicker.js
- - Fixed RGB, Hex, HSB conversion functions see: https://github.com/thorst/jQuery-ColorPicker/pull/2
 
 jquery.ui.timepicker.js:
 - Added fix to timepicker from https://github.com/trentrichardson/jQuery-Timepicker-Addon/issues/848
@@ -34,3 +30,5 @@ jquery.ui.pfextensions:
 - Datepicker Position Fix (https://github.com/primefaces/primefaces/issues/4295)
 - Datepicker Position Fix (https://github.com/primefaces/primefaces/issues/4719)
 - Datepicker style fix (https://github.com/primefaces/primefaces/issues/5374)
+- Slider step min max fix (https://github.com/primefaces/primefaces/issues/8619)
+

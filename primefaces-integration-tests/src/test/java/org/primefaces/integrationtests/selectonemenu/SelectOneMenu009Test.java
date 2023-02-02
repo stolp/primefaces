@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -70,10 +70,12 @@ public class SelectOneMenu009Test extends AbstractPrimePageTest {
         filter.forEach(f -> {
             // Act
             selectOneMenu.getFilterInput().clear();
-            ComponentUtils.sendKeys(selectOneMenu.getFilterInput(),f);
+            ComponentUtils.sendKeys(selectOneMenu.getFilterInput(), f);
 
             // Assert
-            Assertions.assertEquals(drivers.stream().filter(d -> d.getName().startsWith(f)).collect(Collectors.toList()).size(), selectOneMenu.getLabels().size());
+            Assertions.assertEquals(
+                    drivers.stream().filter(d -> d.getName().startsWith(f)).collect(Collectors.toList()).size(),
+                    selectOneMenu.getLabels().size());
         });
 
         // Act

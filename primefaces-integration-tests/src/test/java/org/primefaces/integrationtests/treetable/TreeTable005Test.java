@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -42,13 +42,14 @@ public class TreeTable005Test extends AbstractTreeTableTest {
         TreeTable treeTable = page.treeTable;
 
         Assertions.assertTrue(treeTable.isEmpty());
-        
+
         page.populate.click();
-        
+
         Assertions.assertFalse(treeTable.isEmpty());
     }
 
     public static class Page extends AbstractPrimePage {
+
         @FindBy(id = "form:treeTable")
         TreeTable treeTable;
 

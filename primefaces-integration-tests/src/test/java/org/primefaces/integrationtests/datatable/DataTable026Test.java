@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,11 +23,16 @@
  */
 package org.primefaces.integrationtests.datatable;
 
+import java.time.LocalDate;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.json.JSONObject;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.openqa.selenium.Dimension;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.support.FindBy;
 import org.primefaces.selenium.AbstractPrimePage;
@@ -37,10 +42,6 @@ import org.primefaces.selenium.component.DataTable;
 import org.primefaces.selenium.component.DatePicker;
 import org.primefaces.selenium.component.SelectManyMenu;
 import org.primefaces.selenium.component.model.datatable.Row;
-
-import java.time.LocalDate;
-import java.util.List;
-import java.util.stream.Collectors;
 
 public class DataTable026Test extends AbstractDataTableTest {
 
@@ -57,7 +58,7 @@ public class DataTable026Test extends AbstractDataTableTest {
         dataTable.filter("ID lt", "5");
 
         // Assert
-        List<Employee> employeesFiltered = employees.stream().filter(e -> e.getId()<5).collect(Collectors.toList());
+        List<Employee> employeesFiltered = employees.stream().filter(e -> e.getId() < 5).collect(Collectors.toList());
         assertEmployeeRows(dataTable, employeesFiltered);
 
         assertConfiguration(dataTable.getWidgetConfiguration());
@@ -74,7 +75,7 @@ public class DataTable026Test extends AbstractDataTableTest {
         dataTable.filter("ID lte", "5");
 
         // Assert
-        List<Employee> employeesFiltered = employees.stream().filter(e -> e.getId()<=5).collect(Collectors.toList());
+        List<Employee> employeesFiltered = employees.stream().filter(e -> e.getId() <= 5).collect(Collectors.toList());
         assertEmployeeRows(dataTable, employeesFiltered);
 
         assertConfiguration(dataTable.getWidgetConfiguration());
@@ -91,7 +92,7 @@ public class DataTable026Test extends AbstractDataTableTest {
         dataTable.filter("ID gt", "5");
 
         // Assert
-        List<Employee> employeesFiltered = employees.stream().filter(e -> e.getId()>5).collect(Collectors.toList());
+        List<Employee> employeesFiltered = employees.stream().filter(e -> e.getId() > 5).collect(Collectors.toList());
         assertEmployeeRows(dataTable, employeesFiltered);
 
         assertConfiguration(dataTable.getWidgetConfiguration());
@@ -108,7 +109,7 @@ public class DataTable026Test extends AbstractDataTableTest {
         dataTable.filter("ID gte", "5");
 
         // Assert
-        List<Employee> employeesFiltered = employees.stream().filter(e -> e.getId()>=5).collect(Collectors.toList());
+        List<Employee> employeesFiltered = employees.stream().filter(e -> e.getId() >= 5).collect(Collectors.toList());
         assertEmployeeRows(dataTable, employeesFiltered);
 
         assertConfiguration(dataTable.getWidgetConfiguration());
@@ -125,7 +126,7 @@ public class DataTable026Test extends AbstractDataTableTest {
         dataTable.filter("ID equals", "5");
 
         // Assert
-        List<Employee> employeesFiltered = employees.stream().filter(e -> e.getId()==5).collect(Collectors.toList());
+        List<Employee> employeesFiltered = employees.stream().filter(e -> e.getId() == 5).collect(Collectors.toList());
         assertEmployeeRows(dataTable, employeesFiltered);
 
         assertConfiguration(dataTable.getWidgetConfiguration());
@@ -240,12 +241,11 @@ public class DataTable026Test extends AbstractDataTableTest {
 
         // Assert
         List<Employee> employeesFiltered = employees.stream()
-                .filter(e -> e.getBirthDate().isAfter(LocalDate.of(1969, 12, 31)) && e.getBirthDate().isBefore(LocalDate.of(1970,1, 6)))
+                .filter(e -> e.getBirthDate().isAfter(LocalDate.of(1969, 12, 31)) && e.getBirthDate().isBefore(LocalDate.of(1970, 1, 6)))
                 .collect(Collectors.toList());
         assertEmployeeRows(dataTable, employeesFiltered);
 
-        // Setting range via Selenium (sendKeys) causes JS-errors. So we don´t check for them.
-//        assertConfiguration(dataTable.getWidgetConfiguration());
+        assertConfiguration(dataTable.getWidgetConfiguration());
     }
 
     @Test
@@ -260,13 +260,13 @@ public class DataTable026Test extends AbstractDataTableTest {
         PrimeSelenium.guardAjax(page.birthdateRangeFilter.getInput()).sendKeys(Keys.TAB);
 
         // Assert
-        List<Employee> employeesFiltered = employeesFiltered = employees.stream()
-                .filter(e -> e.getBirthDate().isAfter(LocalDate.of(1969, 12, 24)) && e.getBirthDate().isBefore(LocalDate.of(1970,1, 4)))
+        List<Employee> employeesFiltered = employees.stream()
+                .filter(e -> e.getBirthDate().isAfter(LocalDate.of(1969, 12, 24))
+                        && e.getBirthDate().isBefore(LocalDate.of(1970, 1, 4)))
                 .collect(Collectors.toList());
         assertEmployeeRows(dataTable, employeesFiltered);
 
-        // Setting range via Selenium (sendKeys) causes JS-errors. So we don´t check for them.
-//        assertConfiguration(dataTable.getWidgetConfiguration());
+        assertConfiguration(dataTable.getWidgetConfiguration());
     }
 
     @Test
@@ -282,10 +282,13 @@ public class DataTable026Test extends AbstractDataTableTest {
         page.roleFilter.deselect(Employee.Role.FINANCE.toString(), true);
         page.roleFilter.deselect(Employee.Role.HR.toString(), true);
         page.roleFilter.deselect(Employee.Role.QS.toString(), true);
+        // make window large enough so roleFilter is within viewport and we can use withGuardAjax for the next action
+        getWebDriver().manage().window().setSize(new Dimension(2560, 1440));
+        page.roleFilter.select(Employee.Role.DEVELOPER.toString(), true, true);
 
         // Assert
         List<Employee> employeesFiltered = employees.stream()
-                .filter(e -> e.getRole()==Employee.Role.DEVELOPER)
+                .filter(e -> e.getRole() == Employee.Role.DEVELOPER)
                 .collect(Collectors.toList());
         assertEmployeeRows(dataTable, employeesFiltered);
 
@@ -294,7 +297,7 @@ public class DataTable026Test extends AbstractDataTableTest {
 
         // Assert
         employeesFiltered = employees.stream()
-                .filter(e -> e.getRole()==Employee.Role.DEVELOPER || e.getRole()==Employee.Role.QS)
+                .filter(e -> e.getRole() == Employee.Role.DEVELOPER || e.getRole() == Employee.Role.QS)
                 .collect(Collectors.toList());
         assertEmployeeRows(dataTable, employeesFiltered);
 
@@ -309,6 +312,7 @@ public class DataTable026Test extends AbstractDataTableTest {
     }
 
     public static class Page extends AbstractPrimePage {
+
         @FindBy(id = "form:datatable")
         DataTable dataTable;
 
@@ -323,6 +327,18 @@ public class DataTable026Test extends AbstractDataTableTest {
 
         @FindBy(id = "form:datatable:roleFilter")
         SelectManyMenu roleFilter;
+
+        @FindBy(id = "form:datatable:lastLoginDateTimeFilter")
+        DatePicker lastLoginDateTimeFilter;
+
+        @FindBy(id = "form:datatable:lastLoginDateFilter")
+        DatePicker lastLoginDateFilter;
+
+        @FindBy(id = "form:datatable:lastLoginDateTimeFilter2")
+        DatePicker lastLoginDateTimeFilter2;
+
+        @FindBy(id = "form:datatable:lastLoginDateFilter2")
+        DatePicker lastLoginDateFilter2;
 
         @Override
         public String getLocation() {

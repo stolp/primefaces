@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,19 +25,23 @@ package org.primefaces.model.filter;
 
 import javax.faces.context.FacesContext;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.function.BiPredicate;
 
 public abstract class StringFilterConstraint implements FilterConstraint {
 
     @Override
     public boolean isMatching(FacesContext ctxt, Object value, Object filter, Locale locale) {
-        BiPredicate<String, String> predicate = getPredicate();
-        Objects.requireNonNull(predicate);
+        if (value == null || filter == null) {
+            return false;
+        }
 
-        String str = filter == null ? null : filter.toString().trim().toLowerCase(locale);
-        String val = value == null ? null : value.toString().toLowerCase(locale);
-        return val != null && predicate.test(val, str);
+        return getPredicate()
+                .test(toString(value, locale),
+                        toString(filter, locale));
+    }
+
+    static String toString(Object object, Locale locale) {
+        return object.toString().trim().toLowerCase(locale);
     }
 
     protected abstract BiPredicate<String, String> getPredicate();

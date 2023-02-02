@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -62,7 +62,8 @@ public abstract class CommandButtonBase extends HtmlCommandButton implements Aja
         form,
         renderDisabledClick,
         ariaLabel,
-        ignoreComponentNotFound
+        ignoreComponentNotFound,
+        disableOnAjax
     }
 
     public CommandButtonBase() {
@@ -283,10 +284,19 @@ public abstract class CommandButtonBase extends HtmlCommandButton implements Aja
 
     @Override
     public boolean isIgnoreComponentNotFound() {
-        return (java.lang.Boolean) getStateHelper().eval(PropertyKeys.ignoreComponentNotFound, false);
+        return (Boolean) getStateHelper().eval(PropertyKeys.ignoreComponentNotFound, false);
     }
 
     public void setIgnoreComponentNotFound(boolean ignoreComponentNotFound) {
         getStateHelper().put(PropertyKeys.ignoreComponentNotFound, ignoreComponentNotFound);
     }
+
+    public boolean isDisableOnAjax() {
+        return (Boolean) getStateHelper().eval(PropertyKeys.disableOnAjax, true);
+    }
+
+    public void setDisableOnAjax(boolean disableOnAjax) {
+        getStateHelper().put(PropertyKeys.disableOnAjax, disableOnAjax);
+    }
+
 }

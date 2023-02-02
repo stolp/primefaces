@@ -118,10 +118,7 @@ PrimeFaces.widget.Paginator = PrimeFaces.widget.BaseWidget.extend({
             $(this).removeClass('ui-state-focus');
         })
         .on('keydown.paginator', function(e) {
-            var key = e.which,
-            keyCode = $.ui.keyCode;
-
-            if((key === keyCode.ENTER)) {
+            if(e.key === 'Enter') {
                 $(this).trigger('click');
                 e.preventDefault();
             }
@@ -247,10 +244,7 @@ PrimeFaces.widget.Paginator = PrimeFaces.widget.BaseWidget.extend({
             $(this).removeClass('ui-state-focus');
         })
         .on('keydown.paginator', function(e) {
-            var key = e.which,
-            keyCode = $.ui.keyCode;
-
-            if((key === keyCode.ENTER)) {
+            if(e.key === 'Enter') {
                 $(this).trigger('click');
                 e.preventDefault();
             }
@@ -438,6 +432,7 @@ PrimeFaces.widget.Paginator = PrimeFaces.widget.BaseWidget.extend({
      * @param {number} rpp Number of rows per page to set.
      */
     setRowsPerPage: function(rpp) {
+        this.rppSelect.find('option').removeAttr('selected');
         if (rpp === '*') {
             this.cfg.rows = this.cfg.rowCount;
             this.cfg.pageCount = 1;
@@ -450,6 +445,7 @@ PrimeFaces.widget.Paginator = PrimeFaces.widget.BaseWidget.extend({
             };
 
             this.cfg.paginate.call(this, newState);
+            this.rppSelect.val('*');
         }
         else {
             var first = this.cfg.rows * this.cfg.page;
@@ -461,6 +457,7 @@ PrimeFaces.widget.Paginator = PrimeFaces.widget.BaseWidget.extend({
 
             this.setPage(page);
         }
+        this.rppSelect.find('option[value="'+rpp+'"]').attr('selected', 'selected');
     },
 
     /**

@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -68,11 +68,8 @@ public class PollRenderer extends CoreRenderer {
         Object interval = poll.getInterval();
 
         long convertedInterval;
-        if (interval instanceof Integer) {
-            convertedInterval = (Integer) interval;
-        }
-        else if (interval instanceof Long) {
-            convertedInterval = (Long) interval;
+        if (interval instanceof Number) {
+            convertedInterval = ((Number) interval).longValue();
         }
         else if (interval instanceof Duration) {
             convertedInterval = ((Duration) interval).getSeconds();

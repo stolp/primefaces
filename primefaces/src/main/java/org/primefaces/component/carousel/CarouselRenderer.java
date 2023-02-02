@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -64,6 +64,7 @@ public class CarouselRenderer extends CoreRenderer {
                 .attr("numScroll", carousel.getNumScroll(), 1)
                 .attr("orientation", carousel.getOrientation(), "horizontal")
                 .attr("touchable", ComponentUtils.isTouchable(context, carousel), true)
+                .attr("paginator", carousel.isPaginator(), true)
                 .callback("onPageChange", "function(pageValue)", carousel.getOnPageChange());
 
         if (responsiveOptions != null) {
@@ -154,9 +155,9 @@ public class CarouselRenderer extends CoreRenderer {
 
     protected void encodeItem(FacesContext context, Carousel carousel) throws IOException {
         ResponseWriter writer = context.getResponseWriter();
-        int rowCount = carousel.getRowCount();
 
-        if (carousel.getVar() != null) {
+        if (carousel.isRepeating()) {
+            int rowCount = carousel.getRowCount();
             for (int i = 0; i < rowCount; i++) {
                 carousel.setIndex(i);
 

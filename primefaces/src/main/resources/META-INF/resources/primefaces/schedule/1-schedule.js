@@ -174,15 +174,31 @@ PrimeFaces.widget.Schedule = PrimeFaces.widget.DeferredWidget.extend({
                 eventClickInfo.jsEvent.preventDefault(); // don't let the browser navigate
                 return false;
             }
-
-            if($this.hasBehavior('eventSelect')) {
-                var ext = {
+            
+            var eventId = eventClickInfo.event.id;
+            var ext = {
                     params: [
-                        {name: $this.id + '_selectedEventId', value: eventClickInfo.event.id}
+                        {name: $this.id + '_selectedEventId', value: eventId}
                     ]
-                };
+            };
+            
+            if ($this.doubleClick === eventId) {
+                $this.doubleClick = null;
+                if ($this.hasBehavior('eventDblSelect')) {
+                    $this.callBehavior('eventDblSelect', ext);
+                }
+            } else {
+                $this.doubleClick = eventId;
+                clearInterval($this.clickTimer);
+                $this.clickTimer = setInterval(function() {
+                    $this.doubleClick = null;
+                    clearInterval($this.clickTimer);
+                    $this.clickTimer = null;
+                }, 500);
 
-                $this.callBehavior('eventSelect', ext);
+                if ($this.hasBehavior('eventSelect')) {
+                    $this.callBehavior('eventSelect', ext);
+                }
             }
         };
 
@@ -221,6 +237,21 @@ PrimeFaces.widget.Schedule = PrimeFaces.widget.DeferredWidget.extend({
 
                 $this.callBehavior('eventResize', ext);
             }
+        };
+
+        if (this.cfg.options.selectable) {
+            this.cfg.options.select = function(selectionInfo) {
+                if ($this.hasBehavior('rangeSelect')) {
+                    var ext = {
+                        params: [
+                            { name: $this.id + '_startDate', value: selectionInfo.start.toISOString() },
+                            { name: $this.id + '_endDate', value: selectionInfo.end.toISOString() }
+                        ]
+                    };
+
+                    $this.callBehavior('rangeSelect', ext);
+                }
+            };
         };
 
         if(this.cfg.tooltip) {
@@ -285,7 +316,7 @@ PrimeFaces.widget.Schedule = PrimeFaces.widget.DeferredWidget.extend({
                 params: [
                     {name: $this.id + '_event', value: true},
                     {name: $this.id + '_start', value: fetchInfo.start.toISOString()},
-                    {name: $this.id + '_end', value: fetchInfo.end.toISOString()}
+                    {name: $this.id + '_end', value:  fetchInfo.end.toISOString()}
                 ],
                 onsuccess: function(responseXML, status, xhr) {
                     PrimeFaces.ajax.Response.handle(responseXML, status, xhr, {

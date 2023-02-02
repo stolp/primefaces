@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,10 +28,12 @@ import org.junit.jupiter.api.Test;
 
 public class HtmlSanitizerTest {
 
-
     @Test
     public void htmlSupportedByComponentShouldBeAllowedPerDefault() {
-        String value = "<p><a href=\"https://www.primefaces.org\" target=\"_blank\">Link</a> <strong>bold </strong><span class=\"ql-font-monospace\">monospace</span> <span class=\"ql-size-huge\">huge </span><span class=\"ql-font-serif ql-size-small\">small serif </span><span style=\"color: rgb(230, 0, 0);\">red </span><span style=\"background-color: rgb(255, 255, 0);\">yellow </span>x<sup>2</sup> <img src=\"data:image/png;base64,COFFEE\" /></p>";
+        String value = "<p><a href=\"https://www.primefaces.org\" target=\"_blank\">Link</a> <strong>bold </strong>"
+                + "<span class=\"ql-font-monospace\">monospace</span> <span class=\"ql-size-huge\">huge </span>"
+                + "<span class=\"ql-font-serif ql-size-small\">small serif </span><span style=\"color: rgb(230, 0, 0);\">red </span>"
+                + "<span style=\"background-color: rgb(255, 255, 0);\">yellow </span>x<sup>2</sup> <img src=\"data:image/png;base64,COFFEE\" /></p>";
         String sanitized = HtmlSanitizer.sanitizeHtml(value, true, true, true, true, true);
         Assertions.assertTrue(sanitized.contains("<a href") && sanitized.contains("target="));
         Assertions.assertTrue(sanitized.contains("<strong>bold"));

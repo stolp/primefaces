@@ -60,13 +60,12 @@ PrimeFaces.widget.Rating = PrimeFaces.widget.BaseWidget.extend({
 
         this.input.on("keydown.rating", function(e) {
             var value = $this.getValue() || 0;
-            var keyCode = $.ui.keyCode,
-            key = e.which;
+            var key = e.key;
             
-            if ((key === keyCode.LEFT || key === keyCode.DOWN) && value > 0) {
+            if ((key === 'ArrowLeft' || key === 'ArrowDown') && value > 0) {
                 $this.setValue(--value);
             }
-            else if ((key === keyCode.RIGHT || key === keyCode.UP) && $this.stars.length !== value) {
+            else if ((key === 'ArrowRight' || key === 'ArrowUp') && $this.stars.length !== value) {
                 $this.setValue(++value);
             }
             
@@ -138,8 +137,7 @@ PrimeFaces.widget.Rating = PrimeFaces.widget.BaseWidget.extend({
      */
     getValue: function() {
         var inputVal = this.input.val();
-
-        return inputVal === '' ? null : parseInt(inputVal);
+        return inputVal === '0' ? null : parseInt(inputVal);
     },
 
     /**
@@ -163,8 +161,7 @@ PrimeFaces.widget.Rating = PrimeFaces.widget.BaseWidget.extend({
         }
 
         //set hidden value
-        this.input.val(newValue);
-        this.input.attr('aria-valuenow', newValue);
+        this.input.attr('value', newValue);
 
         //update visuals
         this.stars.removeClass('ui-rating-star-on');
@@ -230,8 +227,7 @@ PrimeFaces.widget.Rating = PrimeFaces.widget.BaseWidget.extend({
      * Resets the rating so that no stars are selected.
      */
     reset: function() {
-        this.input.val('');
-        this.input.attr('aria-valuenow', '');
+        this.input.attr('value', '0');
 
         this.stars.filter('.ui-rating-star-on').removeClass('ui-rating-star-on');
 

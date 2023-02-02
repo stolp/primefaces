@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -38,12 +38,14 @@ public class TestMultiSearchExpressionResolver  implements SearchExpressionResol
     }
 
     @Override
-    public UIComponent resolveComponent(FacesContext context, UIComponent source, UIComponent last, String expression, Set<SearchExpressionHint> hints) {
+    public UIComponent resolveComponent(FacesContext context, UIComponent source, UIComponent last, String expression,
+            Set<SearchExpressionHint> hints) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void resolveComponents(FacesContext context, UIComponent source, UIComponent last, String expression, List<UIComponent> components, Set<SearchExpressionHint> hints) {
+    public void resolveComponents(FacesContext context, UIComponent source, UIComponent last, String expression,
+            List<UIComponent> components, Set<SearchExpressionHint> hints) {
         components.addAll(this.components);
     }
 }

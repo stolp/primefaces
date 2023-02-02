@@ -1,4 +1,13 @@
 if (!PrimeFaces.utils) {
+    
+   /**
+    * Shortcut for is this CMD on MacOs or CTRL key on other OSes. 
+    * @param {JQuery.TriggeredEvent} e The key event that occurred.
+    * @return {boolean} `true` if the key is a meta key, or `false` otherwise.
+    */
+    PF.metaKey = function(e) {
+        return PrimeFaces.utils.isMetaKey(e);
+    };
 
     /**
      * The object with various utilities needed by PrimeFaces.
@@ -10,12 +19,13 @@ if (!PrimeFaces.utils) {
          * Finds the element to which the overlay panel should be appended. If none is specified explicitly, append the
          * panel to the body.
          * @param {PrimeFaces.widget.DynamicOverlayWidget} widget A widget that has a panel to be appended.
-         * @param {JQuery} [overlay] The DOM element for the overlay.
+         * @param {JQuery} target The DOM element that is the target of this overlay
+         * @param {JQuery} overlay The DOM element for the overlay.
          * @return {string | null} The search expression for the element to which the overlay panel should be appended.
          */
-        resolveAppendTo: function(widget, overlay) {
-            if (widget && widget.jq[0]) {
-                var dialog = widget.jq[0].closest('.ui-dialog');
+        resolveAppendTo: function(widget, target, overlay) {
+            if (widget && target && target[0]) {
+                var dialog = target[0].closest('.ui-dialog');
 
                 if (dialog && overlay && overlay.length) {
                     var $dialog = $(dialog);
@@ -123,8 +133,9 @@ if (!PrimeFaces.utils) {
             var id = widget.id,
                 zIndex = overlay.css('z-index') - 1;
 
+            var role = widget instanceof PrimeFaces.widget.ConfirmDialog ? 'alertdialog' : 'dialog';
             overlay.attr({
-                'role': 'dialog'
+                'role': role
                 ,'aria-hidden': false
                 ,'aria-modal': true
                 ,'aria-live': 'polite'
@@ -156,13 +167,14 @@ if (!PrimeFaces.utils) {
             //Disable tabbing out of modal and stop events from targets outside of the overlay element
             var $document = $(document);
             $document.on('focus.' + id + ' mousedown.' + id + ' mouseup.' + id, function(event) {
-                if ($(event.target).zIndex() < zIndex) {
+                var target = $(event.target);
+                if (!target.is(document.body) && (target.zIndex() < zIndex && target.parent().zIndex() < zIndex)) {
                     event.preventDefault();
                 }
             });
             $document.on('keydown.' + id, function(event) {
                 var target = $(event.target);
-                if (event.which === $.ui.keyCode.TAB) {
+                if (event.key === 'Tab') {
                     var tabbables = tabbablesCallback();
                     if (tabbables.length) {
                         var first = tabbables.filter(':first'),
@@ -197,7 +209,11 @@ if (!PrimeFaces.utils) {
                         }
                     }
                 }
-                else if(!target.is(document.body) && (target.zIndex() < zIndex)) {
+                else if (event.ctrlKey) { 
+                    // #8965 allow cut, copy, paste
+                    return;
+                }
+                else if (!target.is(document.body) && (target.zIndex() < zIndex && target.parent().zIndex() < zIndex)) {
                     event.preventDefault();
                 }
             });
@@ -254,6 +270,15 @@ if (!PrimeFaces.utils) {
                 || $(document.body).children("[id='" + modalId + "']").length === 1;
         },
 
+        /**
+         * Is this scrollable parent a type that should be bound to the window element.
+         *
+         * @param {JQuery | undefined | null} jq An element to check if should be bound to window scroll. 
+         * @return {boolean} true this this JQ should be bound to the window scroll event
+         */
+        isScrollParentWindow: function(jq) {
+            return jq && (jq.is('body') || jq.is('html') || jq[0].nodeType === 9); // nodeType 9 is for document element;
+        },
 
         /**
          * Registers a callback on the document that is invoked when the user clicks on an element outside the overlay
@@ -292,28 +317,9 @@ if (!PrimeFaces.utils) {
                     }
                 }
 
-
-                // this checks were moved to the used components
-
-                // do nothing when the clicked element is a child of the overlay
-                /*
-                if (overlay.is($eventTarget) || overlay.has($eventTarget).length > 0) {
-                    return;
+                if (PrimeFaces.hideOverlaysOnViewportChange === true) {
+                    hideCallback(e, $eventTarget);
                 }
-                */
-
-                // OLD WAY: do nothing when the clicked element is a child of the overlay
-                /*
-                var offset = overlay.offset();
-                if (e.pageX < offset.left
-                        || e.pageX > offset.left + overlay.width()
-                        || e.pageY < offset.top
-                        || e.pageY > offset.top + overlay.height()) {
-                    hideCallback();
-                }
-                */
-
-                hideCallback(e, $eventTarget);
             });
 
             return {
@@ -393,9 +399,12 @@ if (!PrimeFaces.utils) {
          * @return {PrimeFaces.UnbindCallback} unbind callback handler
          */
         registerScrollHandler: function(widget, scrollNamespace, scrollCallback) {
-
-            var scrollParent = widget.getJQ().scrollParent();
-            if (scrollParent.is('body') || scrollParent.is('html') || scrollParent[0].nodeType === 9) { // nodeType 9 is for document element
+            var scrollParent;
+            var widgetJq = widget.getJQ();
+            if (widgetJq && typeof widgetJq.scrollParent === 'function') {
+                scrollParent = widgetJq.scrollParent();
+            }
+            if (!scrollParent || PrimeFaces.utils.isScrollParentWindow(scrollParent)) {
                 scrollParent = $(window);
             }
 
@@ -459,6 +468,14 @@ if (!PrimeFaces.utils) {
                 return element['parentNode'] == null ? parents : getParents(element.parentNode, parents.concat([element.parentNode]));
             };
 
+            var addScrollableParent = function(node) {
+                if (PrimeFaces.utils.isScrollParentWindow($(node))) {
+                    scrollableParents.push(window);
+                } else {
+                    scrollableParents.push(node);
+                }
+            };
+
             if (element) {
                 var parents = getParents(element, []);
                 var overflowRegex = /(auto|scroll)/;
@@ -476,15 +493,20 @@ if (!PrimeFaces.utils) {
                             var selector = selectors[j];
                             var el = parent.querySelector(selector);
                             if (el && overflowCheck(el)) {
-                                scrollableParents.push(el);
+                                addScrollableParent(el);
                             }
                         }
                     }
 
                     if (parent.nodeType !== 9 && overflowCheck(parent)) {
-                        scrollableParents.push(parent);
+                        addScrollableParent(parent);
                     }
                 }
+            }
+
+            // if no parents make it the window
+            if (scrollableParents.length === 0) {
+                scrollableParents.push(window);
             }
 
             return scrollableParents;
@@ -497,7 +519,7 @@ if (!PrimeFaces.utils) {
          */
         unbindScrollHandler: function(widget, scrollNamespace) {
             var scrollParent = widget.getJQ().scrollParent();
-            if (scrollParent.is('body') || scrollParent.is('html') || scrollParent[0].nodeType === 9) { // nodeType 9 is for document element
+            if (PrimeFaces.utils.isScrollParentWindow(scrollParent)) {
                 scrollParent = $(window);
             }
 
@@ -544,47 +566,53 @@ if (!PrimeFaces.utils) {
          * @param {JQuery.TriggeredEvent} e The key event that occurred.
          */
         blockEnterKey: function(e) {
-            var key = e.which,
-            keyCode = $.ui.keyCode;
-
-            if((key === keyCode.ENTER)) {
+            if(e.key === 'Enter') {
                 e.preventDefault();
             }
         },
+        
+        /**
+         * Is this CMD on MacOs or CTRL key on other OSes. 
+         * @param {JQuery.TriggeredEvent} e The key event that occurred.
+         * @return {boolean} `true` if the key is a meta key, or `false` otherwise.
+         */
+        isMetaKey: function(e) {
+            return PrimeFaces.env.browser.mac ? e.metaKey : e.ctrlKey;
+        },
 
         /**
-         * Ignores certain keys on filter input text box. Useful in filter input events in many components.
+         * Is this SPACE or ENTER key. Used throughout codebase to trigger and action.
+         * @param {JQuery.TriggeredEvent} e The key event that occurred.
+         * @return {boolean} `true` if the key is an action key, or `false` otherwise.
+         */
+        isActionKey: function(e) {
+            return e.key === ' ' || e.key === 'Enter';
+        },
+
+        /**
+         * Checks if the key pressed is a printable key like 'a' or '4' etc.
+         * @param {JQuery.TriggeredEvent} e The key event that occurred.
+         * @return {boolean} `true` if the key is a printable key, or `false` otherwise.
+         */
+        isPrintableKey: function(e) {
+            return e.key.length === 1 || e.key === 'Unidentified';
+        },
+
+        /**
+         * Ignores unprintable keys on filter input text box. Useful in filter input events in many components.
          * @param {JQuery.TriggeredEvent} e The key event that occurred.
          * @return {boolean} `true` if the one of the keys to ignore was pressed, or `false` otherwise.
          */
         ignoreFilterKey: function(e) {
-            var key = e.which,
-            keyCode = $.ui.keyCode,
-            ignoredKeys = [
-                keyCode.END,
-                keyCode.HOME,
-                keyCode.LEFT,
-                keyCode.RIGHT,
-                keyCode.UP,
-                keyCode.DOWN,
-                keyCode.TAB,
-                16/*Shift*/,
-                17/*Ctrl*/,
-                18/*Alt*/,
-                91, 92, 93/*left/right Win/Cmd*/,
-                keyCode.ESCAPE,
-                keyCode.PAGE_UP,
-                keyCode.PAGE_DOWN,
-                19/*pause/break*/,
-                20/*caps lock*/,
-                44/*print screen*/,
-                144/*num lock*/,
-                145/*scroll lock*/];
-
-            if (ignoredKeys.indexOf(key) > -1) {
-                return true;
+            switch (e.key) {
+                case 'Backspace':
+                case 'Enter':
+                case 'Delete':
+                    return false;
+                    break;
+                default:
+                    return !PrimeFaces.utils.isPrintableKey(e);
             }
-            return false;
         },
 
         /**
@@ -658,7 +686,9 @@ if (!PrimeFaces.utils) {
          */
         enableButton: function(jq) {
             if (jq) {
-                jq.removeClass('ui-state-disabled').removeAttr('disabled');
+                jq.removeClass('ui-state-disabled')
+                  .prop( "disabled", false)
+                  .removeAttr('aria-disabled');
             }
         },
 
@@ -671,7 +701,8 @@ if (!PrimeFaces.utils) {
             if (jq) {
                 jq.removeClass('ui-state-hover ui-state-focus ui-state-active')
                   .addClass('ui-state-disabled')
-                  .attr('disabled', 'disabled');
+                  .attr('disabled', 'disabled')
+                  .attr('aria-disabled', 'true');
             }
         },
 
@@ -839,6 +870,67 @@ if (!PrimeFaces.utils) {
             }
 
             return undefined;
+        },
+
+        /**
+         * When configuring numeric value like 'showDelay' and the user wants '0' we can't treat 0 as Falsey 
+         * so we make the value 0.  Otherwise Falsey returns the default value.
+         *
+         * @param {number|undefined} value the original value
+         * @param {number} defaultValue the required default value if value is not set
+         * @return {number} the calculated value
+         */
+        defaultNumeric: function(value, defaultValue) {
+            if (value === 0) {
+                return 0;
+            }
+            return value || defaultValue;
+        },
+
+        /**
+         * Is this component wrapped in a float label?
+         *
+         * @param {JQuery | undefined | null} jq An element to check if wrapped in float label. 
+         * @return {boolean} true this this JQ has a float label parent
+         */
+        hasFloatLabel: function(jq) {
+            if (!jq || !jq.parent()) {
+                return false;
+            }
+            return jq.parent().hasClass('ui-float-label');
+        },
+
+        /**
+         * Handles floating label CSS if wrapped in a floating label.
+         * @private
+         * @param {JQuery | undefined} element the to add the CSS classes to
+         * @param {JQuery | undefined} input the input to check if filled
+         * @param {boolean | undefined} hasFloatLabel true if this is wrapped in a floating label
+         */
+        updateFloatLabel: function(element, input, hasFloatLabel) {
+            if (!element || !input || !hasFloatLabel) {
+                return;
+            }
+            if (input.val() !== '' || element.find('.ui-chips-token').length !== 0) {
+                element.addClass('ui-inputwrapper-filled');
+            }
+            else {
+                element.removeClass('ui-inputwrapper-filled');
+            }
+        },
+
+        /**
+         * Decode escaped XML into regular string.
+         *
+         * @param {string | undefined} input the input to check if filled
+         * @return {string | undefined} either the original string or escaped XML
+         */
+        decodeXml: function(input) {
+            if (/&amp;|&quot;|&#39;|'&lt;|&gt;/.test(input)) {
+                var doc = new DOMParser().parseFromString(input, "text/html");
+                return doc.documentElement.textContent;
+            }
+            return input;
         }
     };
 

@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -158,7 +158,8 @@ public class DataTable018Test extends AbstractDataTableTest {
 
     @Test
     @Order(4)
-    @DisplayName("DataTable: ListModel rows per page & reset; includes https://github.com/primefaces/primefaces/issues/5465 & https://github.com/primefaces/primefaces/issues/5481")
+    @DisplayName("DataTable: ListModel rows per page & reset; "
+            + "includes https://github.com/primefaces/primefaces/issues/5465 & https://github.com/primefaces/primefaces/issues/5481")
     public void testListModelRowsPerPageAndReset_5465_5481(Page page) {
         // Arrange
         DataTable dataTable = page.dataTable;
@@ -198,6 +199,7 @@ public class DataTable018Test extends AbstractDataTableTest {
     }
 
     public static class Page extends AbstractPrimePage {
+
         @FindBy(id = "form:datatable")
         DataTable dataTable;
 

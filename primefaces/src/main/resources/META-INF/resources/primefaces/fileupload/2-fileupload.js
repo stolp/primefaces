@@ -342,13 +342,17 @@ PrimeFaces.widget.FileUpload = PrimeFaces.widget.BaseWidget.extend({
                 $this.removeFiles(data.files);
 
                 PrimeFaces.ajax.Response.handle(data.result, data.textStatus, data.jqXHR, null);
+                
+                if($this.cfg.global) {
+                    $(document).trigger('pfAjaxSuccess');
+                }
             },
             always: function(e, data) {
-                if($this.cfg.oncomplete) {
-                    $this.cfg.oncomplete.call($this, data.jqXHR.pfArgs, data);
-                }
                 if($this.cfg.global) {
                     $(document).trigger('pfAjaxComplete');
+                }
+                if($this.cfg.oncomplete) {
+                    $this.cfg.oncomplete.call($this, data.jqXHR.pfArgs, data);
                 }
             },
 
@@ -487,10 +491,7 @@ PrimeFaces.widget.FileUpload = PrimeFaces.widget.BaseWidget.extend({
             $this.show();
         })
         .on('keydown.fileupload', function(e) {
-            var keyCode = $.ui.keyCode,
-            key = e.which;
-
-            if(key === keyCode.SPACE || key === keyCode.ENTER) {
+            if (PrimeFaces.utils.isActionKey(e)) {
                 $this.show();
                 $(this).trigger('blur');
                 e.preventDefault();

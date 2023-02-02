@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -32,28 +32,28 @@ public class PieChartOptions extends ChartOptions {
 
     private static final long serialVersionUID = 1L;
 
-    private Number cutoutPercentage;
+    private Object cutout;
     private Number rotation;
     private Number circumference;
     private boolean animateRotate = true;
     private boolean animateScale;
 
     /**
-     * Gets the cutoutPercentage
+     * Gets the cutout
      *
-     * @return cutoutPercentage
+     * @return cutout  accepts pixels as number and percent as string ending with %.
      */
-    public Number getCutoutPercentage() {
-        return cutoutPercentage;
+    public Object getCutout() {
+        return cutout;
     }
 
     /**
-     * Sets the cutoutPercentage
+     * Sets the cutout
      *
-     * @param cutoutPercentage The percentage of the chart that is cut out of the middle.
+     * @param cutout accepts pixels as number and percent as string ending with %.
      */
-    public void setCutoutPercentage(Number cutoutPercentage) {
-        this.cutoutPercentage = cutoutPercentage;
+    public void setCutout(Object cutout) {
+        this.cutout = cutout;
     }
 
     /**

@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -34,6 +34,7 @@ import javax.faces.application.FacesMessage;
 import javax.faces.component.*;
 import javax.faces.component.visit.VisitCallback;
 import javax.faces.component.visit.VisitContext;
+import javax.faces.component.visit.VisitHint;
 import javax.faces.component.visit.VisitResult;
 import javax.faces.context.FacesContext;
 import javax.faces.event.*;
@@ -47,6 +48,7 @@ import org.primefaces.util.LangUtils;
 import org.primefaces.util.SharedStringBuilder;
 import org.primefaces.model.CollectionDataModel;
 import org.primefaces.model.IterableDataModel;
+import org.primefaces.util.ConsumerTwo;
 
 /**
  * UITabPanel is a specialized version of UIRepeat focusing on components that repeat tabs like tabView and accordionPanel.
@@ -135,7 +137,7 @@ public class UITabPanel extends UIPanel implements NamingContainer {
     }
 
     public boolean isDynamic() {
-        return (java.lang.Boolean) getStateHelper().eval(PropertyKeys.dynamic, false);
+        return (Boolean) getStateHelper().eval(PropertyKeys.dynamic, false);
     }
 
     public void setDynamic(boolean _dynamic) {
@@ -143,7 +145,7 @@ public class UITabPanel extends UIPanel implements NamingContainer {
     }
 
     public boolean isPrependId() {
-        return (java.lang.Boolean) getStateHelper().eval(PropertyKeys.prependId, true);
+        return (Boolean) getStateHelper().eval(PropertyKeys.prependId, true);
     }
 
     public void setPrependId(boolean _prependId) {
@@ -746,6 +748,7 @@ public class UITabPanel extends UIPanel implements NamingContainer {
         try {
             // has children
             if (getChildCount() > 0) {
+                boolean dynamic = isDynamic();
                 int i = getOffset();
                 int end = getSize();
                 int step = getStep();
@@ -769,6 +772,11 @@ public class UITabPanel extends UIPanel implements NamingContainer {
                     else {
                         for (int j = 0, childCount = getChildCount(); j < childCount; j++) {
                             UIComponent child = getChildren().get(j);
+
+                            if (dynamic && child instanceof Tab && !((Tab) child).isLoaded(i)) {
+                                continue;
+                            }
+
                             if (PhaseId.APPLY_REQUEST_VALUES.equals(phase)) {
                                 child.processDecodes(faces);
                             }
@@ -905,7 +913,37 @@ public class UITabPanel extends UIPanel implements NamingContainer {
     @Override
     public boolean visitTree(VisitContext context, VisitCallback callback) {
         if (!isRepeating()) {
-            return super.visitTree(context, callback);
+            // interpret unloaded tab as SKIP_UNRENDERED
+            // otherwise we visit them now and they get "partly" loaded; see #9168
+            if (context.getHints().contains(VisitHint.SKIP_UNRENDERED) && isDynamic()) {
+                try {
+                    pushComponentToEL(context.getFacesContext(), this);
+
+                    if (context.invokeVisitCallback(this, callback) == VisitResult.COMPLETE) {
+                        return true;
+                    }
+
+                    for (int i = 0; i < getChildCount(); i++) {
+                        UIComponent child = getChildren().get(i);
+                        if (child instanceof Tab) {
+                            Tab tab = (Tab) child;
+                            if (tab.isLoaded()) {
+                                if (tab.visitTree(context, callback)) {
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+                finally {
+                    popComponentFromEL(context.getFacesContext());
+                }
+
+                return false;
+            }
+            else {
+                return super.visitTree(context, callback);
+            }
         }
         else {
             // override the behavior from UIComponent to visit
@@ -1267,19 +1305,19 @@ public class UITabPanel extends UIPanel implements NamingContainer {
     }
 
     public boolean isRepeating() {
-        return (getVar() != null);
+        return getVar() != null;
     }
 
     public void resetLoadedTabsState() {
-        if (!isRepeating() && isDynamic()) {
-            for (int i = 0; i < getChildCount(); i++) {
-                UIComponent child = getChildren().get(i);
-                if (child instanceof Tab) {
-                    Tab tab = (Tab) child;
-                    tab.setLoaded(false);
-                }
+        boolean repeating = isRepeating();
+        forEachTab((tab, index) -> {
+            if (repeating) {
+                tab.setLoaded(index, false);
             }
-        }
+            else {
+                tab.setLoaded(false);
+            }
+        }, false);
     }
 
     protected boolean shouldSkipChildren(FacesContext context) {
@@ -1295,6 +1333,57 @@ public class UITabPanel extends UIPanel implements NamingContainer {
         }
 
         return Boolean.parseBoolean(paramValue);
+    }
+
+    public void forEachTab(ConsumerTwo<Tab, Integer> callback) {
+        forEachTab(callback, true);
+    }
+
+    public void forEachTab(ConsumerTwo<Tab, Integer> callback, boolean skipUnrendered) {
+        if (isRepeating()) {
+            Tab tab = getDynamicTab();
+
+            int dataCount = getRowCount();
+            for (int i = 0; i < dataCount; i++) {
+                setIndex(i);
+
+                if (skipUnrendered && !tab.isRendered()) {
+                    continue;
+                }
+
+                callback.accept(tab, i);
+            }
+
+            setIndex(-1);
+        }
+        else {
+            int j = 0;
+            for (int i = 0; i < getChildCount(); i++) {
+                UIComponent child = getChildren().get(i);
+                if (child instanceof Tab) {
+                    Tab tab = (Tab) child;
+
+                    if (skipUnrendered && !tab.isRendered()) {
+                        j++;
+                        continue;
+                    }
+
+                    callback.accept((Tab) child, j);
+                    j++;
+                }
+            }
+        }
+    }
+
+    public Tab getDynamicTab() {
+        for (int i = 0; i < getChildCount(); i++) {
+            UIComponent child = getChildren().get(i);
+            if (child instanceof Tab) {
+                return (Tab) child;
+            }
+        }
+
+        throw new FacesException("p:tab is required as children in component with clientId: " + this.getClientId());
     }
 
     private final class IndexedEvent extends FacesEvent {

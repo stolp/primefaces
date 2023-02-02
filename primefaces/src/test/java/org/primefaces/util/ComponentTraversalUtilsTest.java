@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -32,37 +32,36 @@ import javax.faces.component.UIOutput;
 
 import org.junit.jupiter.api.Test;
 
-
 public class ComponentTraversalUtilsTest {
 
-	@Test
-	public void closestForm() {
-		UIForm outerForm = new UIForm();
-		UIForm innerForm = new UIForm();
-		UINamingContainer container = new UINamingContainer();
-		UIComponent cmp = new UIOutput();
+    @Test
+    public void closestForm() {
+        UIForm outerForm = new UIForm();
+        UIForm innerForm = new UIForm();
+        UINamingContainer container = new UINamingContainer();
+        UIComponent cmp = new UIOutput();
 
-		innerForm.getChildren().add(cmp);
-		container.getChildren().add(innerForm);
-		outerForm.getChildren().add(container);
+        innerForm.getChildren().add(cmp);
+        container.getChildren().add(innerForm);
+        outerForm.getChildren().add(container);
 
-		UIComponent result = ComponentTraversalUtils.closestForm(null, cmp);
-		assertSame(innerForm, result, "Expected closest surrounding UIForm");
-	}
+        UIComponent result = ComponentTraversalUtils.closestForm(null, cmp);
+        assertSame(innerForm, result, "Expected closest surrounding UIForm");
+    }
 
-	@Test
-	public void closestNamingContainer() {
-		UINamingContainer outerContainer = new UINamingContainer();
-		UINamingContainer innerContainer = new UINamingContainer();
-		UIForm form = new UIForm();
-		UIComponent cmp = new UIOutput();
+    @Test
+    public void closestNamingContainer() {
+        UINamingContainer outerContainer = new UINamingContainer();
+        UINamingContainer innerContainer = new UINamingContainer();
+        UIForm form = new UIForm();
+        UIComponent cmp = new UIOutput();
 
-		innerContainer.getChildren().add(cmp);
-		form.getChildren().add(innerContainer);
-		outerContainer.getChildren().add(form);
+        innerContainer.getChildren().add(cmp);
+        form.getChildren().add(innerContainer);
+        outerContainer.getChildren().add(form);
 
-		UIComponent result = ComponentTraversalUtils.closestNamingContainer(cmp);
-		assertSame(innerContainer, result, "Expected closest surrounding UIForm");
-	}
+        UIComponent result = ComponentTraversalUtils.closestNamingContainer(cmp);
+        assertSame(innerContainer, result, "Expected closest surrounding UIForm");
+    }
 
 }

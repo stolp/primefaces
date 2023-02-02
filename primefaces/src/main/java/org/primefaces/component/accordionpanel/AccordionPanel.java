@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -123,7 +123,7 @@ public class AccordionPanel extends AccordionPanelBase {
                     int index = Integer.parseInt(params.get(clientId + "_tabindex"));
                     setIndex(index);
                     changeEvent.setData(getIndexData());
-                    changeEvent.setTab((Tab) getChildren().get(0));
+                    changeEvent.setTab(getDynamicTab());
                 }
 
                 changeEvent.setPhaseId(behaviorEvent.getPhaseId());
@@ -142,7 +142,7 @@ public class AccordionPanel extends AccordionPanelBase {
                     int index = Integer.parseInt(params.get(clientId + "_tabindex"));
                     setIndex(index);
                     closeEvent.setData(getIndexData());
-                    closeEvent.setTab((Tab) getChildren().get(0));
+                    closeEvent.setTab(getDynamicTab());
                 }
 
                 closeEvent.setPhaseId(behaviorEvent.getPhaseId());

@@ -103,6 +103,24 @@
         },
 
         /**
+         * Gets the form by id or the closest form if the id is not a form itself.
+         * In AJAX we also have a fallback for the first form in DOM, this should not be used here.
+         *
+         * @param {string} id ID of the component to get the closest form or if its a form itself
+         * @return {JQuery} the form or NULL if no form found
+         */
+        getClosestForm: function(id) {
+            var form = $(PrimeFaces.escapeClientId(id));
+            if (!form.is('form')) {
+                form = form.closest('form');
+            }
+            if (!form) {
+                PrimeFaces.error('Form element could not be found for id: ' + id);
+            }
+            return form;
+        },
+
+        /**
          * Adds hidden input elements to the given form. For each key-value pair, a new hidden input element is created
          * with the given value and the key used as the name.
          * @param {string} parent The ID of a FORM element.
@@ -110,7 +128,7 @@
          * @return {typeof PrimeFaces} This object for chaining.
          */
         addSubmitParam : function(parent, params) {
-            var form = $(this.escapeClientId(parent));
+            var form = PrimeFaces.getClosestForm(parent);
 
             for(var key in params) {
                 form.append("<input type=\"hidden\" name=\"" + PrimeFaces.escapeHTML(key) + "\" value=\"" + PrimeFaces.escapeHTML(params[key]) + "\" class=\"ui-submit-param\"></input>");
@@ -128,7 +146,7 @@
          * @param {string} [target] The target attribute to use on the form during the submit process.
          */
         submit : function(formId, target) {
-            var form = $(this.escapeClientId(formId));
+            var form = PrimeFaces.getClosestForm(formId);
             var prevTarget;
 
             if (target) {
@@ -307,13 +325,6 @@
                 }
             });
 
-            //aria
-            if(input.is(':not([type="password"])')) {
-                input.attr('role', 'textbox')
-                     .attr('aria-readonly', input.prop('readonly'));
-            }
-            input.attr('aria-disabled', input.is(':disabled'));
-
             if(input.is('textarea')) {
                 input.attr('aria-multiline', true);
             }
@@ -349,19 +360,12 @@
             }).on("blur", function() {
                 $(this).removeClass('ui-state-focus ui-state-active');
             }).on("keydown", function(e) {
-                if(e.which === $.ui.keyCode.SPACE || e.which === $.ui.keyCode.ENTER) {
+                if(e.key === ' ' || e.key === 'Enter') {
                     $(this).addClass('ui-state-active');
                 }
             }).on("keyup", function() {
                 $(this).removeClass('ui-state-active');
             });
-
-            //aria
-            var role = button.attr('role');
-            if(!role) {
-                button.attr('role', 'button');
-            }
-            button.attr('aria-disabled', button.prop('disabled'));
 
             return this;
         },
@@ -505,16 +509,7 @@
          * @return {string} The current theme, such as `omega` or `luna-amber`. Empty string when no theme is loaded.
          */
         getTheme : function() {
-            var themeLink = PrimeFaces.getThemeLink();
-            if (themeLink.length === 0) {
-                return "";
-            }
-
-            var themeURL = themeLink.attr('href'),
-                plainURL = themeURL.split('&')[0],
-                oldTheme = plainURL.split('ln=primefaces-')[1];
-
-            return oldTheme;
+            return PrimeFaces.env.getTheme();
         },
 
         /**
@@ -548,10 +543,12 @@
         /**
          * Escapes the given value to be used as the content of an HTML element or attribute.
          * @param {string} value A string to be escaped
+         * @param {boolean | undefined} preventDoubleEscaping if true will not include ampersand to prevent double escaping
          * @return {string} The given value, escaped to be used as a text-literal within an HTML document.
          */
-        escapeHTML: function(value) {
-            return String(value).replace(/[&<>"'`=\/]/g, function (s) {
+        escapeHTML: function(value, preventDoubleEscaping) {
+            var regex = preventDoubleEscaping ? /[<>"'`=\/]/g : /[&<>"'`=\/]/g;
+            return String(value).replace(regex, function (s) {
                 return PrimeFaces.entityMap[s];
             });
         },
@@ -640,19 +637,26 @@
                 //ajax update
                 if(widget && (widget.constructor === this.widget[widgetName])) {
                     widget.refresh(cfg);
+                    if (cfg.postRefresh) {
+                        cfg.postRefresh.call(widget, widget);
+                    }
                 }
                 //page init
                 else {
-                    this.widgets[widgetVar] = new this.widget[widgetName](cfg);
+		    var newWidget = new this.widget[widgetName](cfg);
+                    this.widgets[widgetVar] = newWidget;
                     if(this.settings.legacyWidgetNamespace) {
-                        window[widgetVar] = this.widgets[widgetVar];
+                        window[widgetVar] = newWidget;
+                    }
+                    if (cfg.postConstruct) {
+                       cfg.postConstruct.call(newWidget, newWidget);
                     }
                 }
             }
             // widget script not loaded
             else {
                 // should be loaded by our dynamic resource handling, log a error
-                PrimeFaces.widgetNotAvailable(widgetName);
+                PrimeFaces.error("Widget class '" + widgetName + "' not found!");
             }
         },
 
@@ -787,6 +791,7 @@
                 }
 
                 var cookieName = 'primefaces.download' + PrimeFaces.settings.viewId.replace(/\//g, '_');
+                cookieName = cookieName.substr(0, cookieName.lastIndexOf("."));
                 if (monitorKey && monitorKey !== '') {
                     cookieName += '_' + monitorKey;
                 }
@@ -816,14 +821,16 @@
          */
         scrollTo: function(id) {
             var offset = $(PrimeFaces.escapeClientId(id)).offset();
-
-            $('html,body').animate({
-                scrollTop:offset.top
-                ,
-                scrollLeft:offset.left
-            },{
-                easing: 'easeInCirc'
-            },1000);
+            var scrollBehavior = 'scroll-behavior';
+            var target = $('html,body');
+            var sbValue = target.css(scrollBehavior);
+            target.css(scrollBehavior, 'auto');
+            target.animate(
+                    { scrollTop: offset.top, scrollLeft: offset.left },
+                    1000,
+                    'easeInCirc',
+                    function(){ target.css(scrollBehavior, sbValue) }
+            );
         },
 
         /**
@@ -921,7 +928,9 @@
          * @param {PrimeFaces.dialog.DialogHandlerCfg} cfg Configuration of the dialog.
     	 */
         openDialog: function(cfg) {
+            if (PrimeFaces.dialog) {
         	PrimeFaces.dialog.DialogHandler.openDialog(cfg);
+            }
         },
 
         /**
@@ -930,7 +939,9 @@
          * @param {PrimeFaces.dialog.DialogHandlerCfg} cfg Configuration of the dialog.
          */
         closeDialog: function(cfg) {
+            if (PrimeFaces.dialog) {
         	PrimeFaces.dialog.DialogHandler.closeDialog(cfg);
+            }
         },
 
         /**
@@ -939,7 +950,9 @@
          * @param {PrimeFaces.widget.ConfirmDialog.ConfirmDialogMessage} msg Message to show in a dialog.
          */
         showMessageInDialog: function(msg) {
+            if (PrimeFaces.dialog) {
         	PrimeFaces.dialog.DialogHandler.showMessageInDialog(msg);
+            }
         },
 
         /**
@@ -951,7 +964,7 @@
             if (msg.type === 'popup' && PrimeFaces.confirmPopup) {
                 PrimeFaces.confirmPopup.showMessage(msg);
             }
-            else {
+            else if (PrimeFaces.dialog) {
                 PrimeFaces.dialog.DialogHandler.confirm(msg);
             }
         },
@@ -1157,6 +1170,34 @@
         },
 
         /**
+         * Converts the provided string to searchable form.
+         * 
+         * @param {string} string to normalize.
+         * @param {boolean} lowercase flag indicating whether the string should be lower cased.
+         * @param {boolean} normalize flag indicating whether the string should be normalized (accents to be removed
+         * from characters).
+         * @returns {string} searchable string.
+         */
+        toSearchable: function(string, lowercase, normalize) {
+            if (!string) return '';
+            var result = normalize ? string.normalize('NFD').replace(/[\u0300-\u036f]/g, '') : string;
+            return lowercase ? result.toLowerCase() : result;
+        },
+
+        /**
+         * Reset any state variables on update="@all".
+         */
+        resetState: function() {
+            PrimeFaces.ajax.Queue.abortAll();
+
+            PrimeFaces.zindex = 1000;
+            PrimeFaces.detachedWidgets = [];
+            PrimeFaces.animationActive = false;
+            PrimeFaces.customFocus = false;
+            PrimeFaces.widgets = {};            
+        },
+
+        /**
          * Logs the current PrimeFaces and jQuery version to console.
          */
         version: function() {
@@ -1189,6 +1230,13 @@
          * @type {boolean}
          */
         customFocus : false,
+        
+        /**
+         * PrimeFaces per defaults hides all overlays on scrolling/resizing to avoid positioning problems.
+         * This is really hard to overcome in selenium tests and we can disable this behavior with this setting.
+         * @type {boolean}
+         */
+        hideOverlaysOnViewportChange : true,
 
         /**
          * A list of widgets that were once instantiated, but are not removed from the DOM, such as due to the result

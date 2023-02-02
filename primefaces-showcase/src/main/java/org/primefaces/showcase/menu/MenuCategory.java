@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -31,10 +31,17 @@ public class MenuCategory implements Serializable {
 
     private final String label;
     private List<MenuItem> menuItems;
+    private boolean custom;
 
     public MenuCategory(String label, List<MenuItem> menuItems) {
         this.label = label;
         this.menuItems = menuItems;
+    }
+
+    public MenuCategory(String label, List<MenuItem> menuItems, boolean custom) {
+        this.label = label;
+        this.menuItems = menuItems;
+        this.custom = custom;
     }
 
     public String getLabel() {
@@ -43,6 +50,10 @@ public class MenuCategory implements Serializable {
 
     public List<MenuItem> getMenuItems() {
         return menuItems;
+    }
+
+    public boolean getCustom() {
+        return custom;
     }
 
     @Override

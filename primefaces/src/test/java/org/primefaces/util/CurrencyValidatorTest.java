@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,7 +30,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
-import java.text.DecimalFormatSymbols;
+import java.text.DecimalFormat;
 import java.util.Locale;
 
 /**
@@ -38,16 +38,21 @@ import java.util.Locale;
  */
 public class CurrencyValidatorTest {
 
-    private static String US_DOLLAR;
-    private static String UK_POUND;
-    private static String BRAZIL_REAL;
-    private static Locale BRAZIL = new Locale("pt", "BR");
+    private static String usDollar;
+    private static String ukPound;
+    private static String brazilReal;
+    private static String customCurrencySymbol;
+    private static DecimalFormat uk = (DecimalFormat) DecimalFormat.getCurrencyInstance(Locale.UK);
+    private static DecimalFormat us = (DecimalFormat) DecimalFormat.getCurrencyInstance(Locale.US);
+    private static DecimalFormat brazil = (DecimalFormat) DecimalFormat.getCurrencyInstance(new Locale("pt", "BR"));
+    private static DecimalFormat custom = (DecimalFormat) DecimalFormat.getCurrencyInstance(new Locale("es", "US"));
 
     @BeforeAll
     protected static void setUp() throws Exception {
-        US_DOLLAR = (new DecimalFormatSymbols(Locale.US)).getCurrencySymbol();
-        UK_POUND = (new DecimalFormatSymbols(Locale.UK)).getCurrencySymbol();
-        BRAZIL_REAL = (new DecimalFormatSymbols(BRAZIL)).getCurrencySymbol();
+        usDollar = us.getDecimalFormatSymbols().getCurrencySymbol();
+        ukPound = uk.getDecimalFormatSymbols().getCurrencySymbol();
+        brazilReal = brazil.getDecimalFormatSymbols().getCurrencySymbol();
+        customCurrencySymbol = custom.getDecimalFormatSymbols().getCurrencySymbol();
     }
 
     private static int getVersion() {
@@ -75,23 +80,23 @@ public class CurrencyValidatorTest {
         BigDecimal noDecimal = new BigDecimal("1234.00");
         BigDecimal oneDecimal = new BigDecimal("1234.50");
 
-        assertEquals(expected, validator.validate(UK_POUND + "1,234.56", Locale.UK), "UK locale");
-        assertEquals(negative, validator.validate("-" + UK_POUND + "1,234.56", Locale.UK), "UK negative");
-        assertEquals(noDecimal, validator.validate(UK_POUND + "1,234", Locale.UK), "UK no decimal");
-        assertEquals(oneDecimal, validator.validate(UK_POUND + "1,234.5", Locale.UK), "UK 1 decimal");
-        assertEquals(expected, validator.validate(UK_POUND + "1,234.567", Locale.UK), "UK 3 decimal");
-        assertEquals(expected, validator.validate("1,234.56", Locale.UK), "UK no symbol");
+        assertEquals(expected, validator.validate(ukPound + "1,234.56", uk), "UK locale");
+        assertEquals(negative, validator.validate("-" + ukPound + "1,234.56", uk), "UK negative");
+        assertEquals(noDecimal, validator.validate(ukPound + "1,234", uk), "UK no decimal");
+        assertEquals(oneDecimal, validator.validate(ukPound + "1,234.5", uk), "UK 1 decimal");
+        assertEquals(expected, validator.validate(ukPound + "1,234.567", uk), "UK 3 decimal");
+        assertEquals(expected, validator.validate("1,234.56", uk), "UK no symbol");
 
-        assertEquals(expected, validator.validate(US_DOLLAR + "1,234.56", Locale.US), "US locale");
-        assertEquals(noDecimal, validator.validate(US_DOLLAR + "1,234", Locale.US), "US no decimal");
-        assertEquals(oneDecimal, validator.validate(US_DOLLAR + "1,234.5", Locale.US), "US 1 decimal");
-        assertEquals(expected, validator.validate(US_DOLLAR + "1,234.567", Locale.US), "US 3 decimal");
-        assertEquals(expected, validator.validate("1,234.56", Locale.US), "US no symbol");
+        assertEquals(expected, validator.validate(usDollar + "1,234.56", us), "US locale");
+        assertEquals(noDecimal, validator.validate(usDollar + "1,234", us), "US no decimal");
+        assertEquals(oneDecimal, validator.validate(usDollar + "1,234.5", us), "US 1 decimal");
+        assertEquals(expected, validator.validate(usDollar + "1,234.567", us), "US 3 decimal");
+        assertEquals(expected, validator.validate("1,234.56", us), "US no symbol");
         if (getVersion() > 8) {
-            assertEquals(negative, validator.validate("-" + US_DOLLAR + "1,234.56", Locale.US), "US negative");
+            assertEquals(negative, validator.validate("-" + usDollar + "1,234.56", us), "US negative");
         }
         else {
-            assertEquals(negative, validator.validate("(" + US_DOLLAR + "1,234.56)", Locale.US), "US negative");
+            assertEquals(negative, validator.validate("(" + usDollar + "1,234.56)", us), "US negative");
         }
     }
 
@@ -104,15 +109,15 @@ public class CurrencyValidatorTest {
         BigDecimal expected = new BigDecimal("1234.00");
         BigDecimal negative = new BigDecimal("-1234.00");
 
-        assertEquals(expected, validator.validate(UK_POUND + "1,234", Locale.UK), "UK locale");
-        assertEquals(negative, validator.validate("-" + UK_POUND + "1,234", Locale.UK), "UK negative");
+        assertEquals(expected, validator.validate(ukPound + "1,234", uk), "UK locale");
+        assertEquals(negative, validator.validate("-" + ukPound + "1,234", uk), "UK negative");
 
-        assertEquals(expected, validator.validate(US_DOLLAR + "1,234", Locale.US), "US locale");
+        assertEquals(expected, validator.validate(usDollar + "1,234", us), "US locale");
         if (getVersion() > 8) {
-            assertEquals(negative, validator.validate("-" + US_DOLLAR + "1,234", Locale.US), "US negative");
+            assertEquals(negative, validator.validate("-" + usDollar + "1,234", us), "US negative");
         }
         else {
-            assertEquals(negative, validator.validate("(" + US_DOLLAR + "1,234)", Locale.US), "US negative");
+            assertEquals(negative, validator.validate("(" + usDollar + "1,234)", us), "US negative");
         }
     }
 
@@ -124,22 +129,9 @@ public class CurrencyValidatorTest {
         CurrencyValidator validator = CurrencyValidator.getInstance();
         BigDecimal expected = new BigDecimal("20.00");
 
-        assertEquals(expected, validator.validate("¤20.00", Locale.US), "US locale");
-        assertEquals(expected, validator.validate("¤20.00", Locale.UK), "UK locale");
+        assertEquals(expected, validator.validate("¤20.00", us), "US locale");
+        assertEquals(expected, validator.validate("¤20.00", uk), "UK locale");
     }
-
-    /**
-     * Test Patterns
-     */
-    @Test
-    public void testPatterns() {
-        CurrencyValidator validator = CurrencyValidator.getInstance();
-
-        assertEquals(US_DOLLAR + "#,##0.00", validator.getPattern(Locale.US), "US");
-        assertEquals(UK_POUND + "#,##0.00", validator.getPattern(Locale.UK), "UK");
-    }
-
-
 
     /**
      * Test Infinity is not parsed
@@ -148,10 +140,9 @@ public class CurrencyValidatorTest {
     public void testWeirdPatternIsNotParsed() {
         CurrencyValidator validator = CurrencyValidator.getInstance();
 
-        Number result = validator.validate("74E12341", Locale.UK);
+        Number result = validator.validate("74E12341", uk);
         assertNull(result);
     }
-
 
     @Test
     public void testBrazilianReal() {
@@ -160,7 +151,7 @@ public class CurrencyValidatorTest {
         BigDecimal expected = new BigDecimal("1234.56");
 
         // Act
-        Number result = validator.validate(BRAZIL_REAL + " 1.234,56", BRAZIL);
+        Number result = validator.validate(brazilReal + " 1.234,56", brazil);
 
         // Assert
         assertEquals(expected, result, "Brazilian locale");

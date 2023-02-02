@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,6 +26,7 @@ package org.primefaces.component.api;
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.util.*;
+import java.util.logging.Logger;
 
 import javax.faces.FacesException;
 import javax.faces.application.Application;
@@ -61,6 +62,7 @@ import org.primefaces.util.SharedStringBuilder;
 @SuppressWarnings("unchecked")
 public class UIData extends javax.faces.component.UIData {
 
+    private static final Logger LOGGER = Logger.getLogger(UIData.class.getName());
     private static final String SB_ID = UIData.class.getName() + "#id";
 
     private final Map<String, Object> _rowTransientStates = new HashMap<>();
@@ -82,16 +84,20 @@ public class UIData extends javax.faces.component.UIData {
 
     public boolean isLazy() {
         return ComponentUtils.eval(getStateHelper(), PropertyKeys.lazy, () -> {
+            boolean lazy = false;
+
             // if not set by xhtml, we need to check the type of the value binding
             Class<?> type = ELUtils.getType(getFacesContext(),
                     getValueExpression("value"),
                     () -> getValue());
             if (type == null) {
-                throw new FacesException("Unable to automatically determine the `lazy` attribute. "
+                LOGGER.warning("Unable to automatically determine the `lazy` attribute, fallback to false. "
                         + "Either define the `lazy` attribute on the component or make sure the `value` attribute doesn't resolve to `null`. "
                         + "clientId: " + this.getClientId());
             }
-            boolean lazy = LazyDataModel.class.isAssignableFrom(type);
+            else {
+                lazy = LazyDataModel.class.isAssignableFrom(type);
+            }
 
             // remember in ViewState, to not do the same check again
             setLazy(lazy);
@@ -717,11 +723,12 @@ public class UIData extends javax.faces.component.UIData {
                     return true;
                 }
 
-                if (requiresColumns() && visitColumnsAndColumnFacets(context, callback, visitRows)) {
+                Set<UIComponent> rejectedChildren = new HashSet<>();
+                if (requiresColumns() && visitColumnsAndColumnFacets(context, callback, visitRows, rejectedChildren)) {
                     return true;
                 }
 
-                if (visitRows(context, callback, visitRows)) {
+                if (visitRows(context, callback, visitRows, rejectedChildren)) {
                     return true;
                 }
 
@@ -754,7 +761,7 @@ public class UIData extends javax.faces.component.UIData {
         return false;
     }
 
-    protected boolean visitColumnsAndColumnFacets(VisitContext context, VisitCallback callback, boolean visitRows) {
+    protected boolean visitColumnsAndColumnFacets(VisitContext context, VisitCallback callback, boolean visitRows, Set<UIComponent> rejectedChildren) {
         if (visitRows) {
             setRowIndex(-1);
         }
@@ -765,6 +772,10 @@ public class UIData extends javax.faces.component.UIData {
                 VisitResult result = context.invokeVisitCallback(child, callback); // visit the column directly
                 if (result == VisitResult.COMPLETE) {
                     return true;
+                }
+                else if (result == VisitResult.REJECT) {
+                    rejectedChildren.add(child);
+                    continue;
                 }
 
                 if (child instanceof UIColumn) {
@@ -847,7 +858,7 @@ public class UIData extends javax.faces.component.UIData {
         return false;
     }
 
-    protected boolean visitRows(VisitContext context, VisitCallback callback, boolean visitRows) {
+    protected boolean visitRows(VisitContext context, VisitCallback callback, boolean visitRows, Set<UIComponent> rejectedChildren) {
         boolean requiresColumns = requiresColumns();
         int processed = 0;
         int rowIndex = 0;
@@ -872,31 +883,33 @@ public class UIData extends javax.faces.component.UIData {
             if (getChildCount() > 0) {
                 for (int i = 0; i < getChildCount(); i++) {
                     UIComponent kid = getChildren().get(i);
-                    if (requiresColumns) {
-                        if (kid instanceof Columns) {
-                            Columns columns = (Columns) kid;
-                            for (int j = 0; j < columns.getRowCount(); j++) {
-                                columns.setRowIndex(j);
+                    if (!rejectedChildren.contains(kid)) {
+                        if (requiresColumns) {
+                            if (kid instanceof Columns) {
+                                Columns columns = (Columns) kid;
+                                for (int j = 0; j < columns.getRowCount(); j++) {
+                                    columns.setRowIndex(j);
 
-                                boolean value = visitColumnContent(context, callback, columns);
+                                    boolean value = visitColumnContent(context, callback, columns);
+                                    if (value) {
+                                        columns.setRowIndex(-1);
+                                        return true;
+                                    }
+                                }
+
+                                columns.setRowIndex(-1);
+                            }
+                            else {
+                                boolean value = visitColumnContent(context, callback, kid);
                                 if (value) {
-                                    columns.setRowIndex(-1);
                                     return true;
                                 }
                             }
-
-                            columns.setRowIndex(-1);
                         }
                         else {
-                            boolean value = visitColumnContent(context, callback, kid);
-                            if (value) {
+                            if (kid.visitTree(context, callback)) {
                                 return true;
                             }
-                        }
-                    }
-                    else {
-                        if (kid.visitTree(context, callback)) {
-                            return true;
                         }
                     }
                 }

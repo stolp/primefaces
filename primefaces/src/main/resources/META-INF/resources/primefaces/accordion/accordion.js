@@ -70,6 +70,15 @@ PrimeFaces.widget.AccordionPanel = PrimeFaces.widget.BaseWidget.extend({
         else if (stateHolderVal != null) {
             this.cfg.active = parseInt(this.stateHolder.val());
         }
+        
+        this.headers.each(function() {
+            var containerId = PrimeFaces.escapeClientId(this.id.replace('_header', ''));
+            if ($(containerId + ' .ui-state-error').length > 0 || $(containerId + ' .ui-message-error-detail').length > 0) {
+                $(this).addClass('ui-state-error');
+            } else {
+                $(this).removeClass('ui-state-error');
+            }
+        });
     },
 
     /**
@@ -121,10 +130,7 @@ PrimeFaces.widget.AccordionPanel = PrimeFaces.widget.BaseWidget.extend({
             $(this).removeClass('ui-tabs-outline');
         })
         .on('keydown.accordion', function(e) {
-            var keyCode = $.ui.keyCode,
-            key = e.which;
-
-            if(key === keyCode.SPACE || key === keyCode.ENTER) {
+            if (PrimeFaces.utils.isActionKey(e)) {
                 $(this).trigger('click');
                 e.preventDefault();
             }

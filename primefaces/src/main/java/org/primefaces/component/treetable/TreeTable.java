@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -42,6 +42,7 @@ import org.primefaces.PrimeFaces;
 import org.primefaces.component.api.UIColumn;
 import org.primefaces.component.column.Column;
 import org.primefaces.component.treetable.feature.FilterFeature;
+import org.primefaces.component.treetable.feature.SortFeature;
 import org.primefaces.event.*;
 import org.primefaces.event.data.FilterEvent;
 import org.primefaces.event.data.PageEvent;
@@ -120,9 +121,8 @@ public class TreeTable extends TreeTableBase {
             .put(MatchMode.IN, new InFilterConstraint())
             .put(MatchMode.NOT_IN, new NegationFilterConstraintWrapper(new InFilterConstraint()))
             .put(MatchMode.GLOBAL, new GlobalFilterConstraint())
-            .put(MatchMode.RANGE, new RangeFilterConstraint())
-            .put(MatchMode.BETWEEN, new RangeFilterConstraint())
-            .put(MatchMode.NOT_BETWEEN, new NegationFilterConstraintWrapper(new RangeFilterConstraint()))
+            .put(MatchMode.BETWEEN, new BetweenFilterConstraint())
+            .put(MatchMode.NOT_BETWEEN, new NegationFilterConstraintWrapper(new BetweenFilterConstraint()))
             .build();
 
     private static final Map<String, Class<? extends BehaviorEvent>> BEHAVIOR_EVENT_MAPPING = MapBuilder.<String, Class<? extends BehaviorEvent>>builder()
@@ -406,7 +406,7 @@ public class TreeTable extends TreeTableBase {
         resetDynamicColumns();
 
         // reset value when filtering is enabled
-        // filtering stores the filtered values the value property, so it needs to be resetted; see #7336
+        // filtering stores the filtered values the value property, so it needs to be reset; see #7336
         if (isFilteringEnabled()) {
             setValue(null);
         }
@@ -679,5 +679,15 @@ public class TreeTable extends TreeTableBase {
     @Override
     public void setWidth(String width) {
         getStateHelper().put(InternalPropertyKeys.width, width);
+    }
+
+    /**
+     * Recalculates filteredValue after adding, updating or removing TreeNodes to/from a filtered TreeTable.
+     */
+    @Override
+    public void filterAndSort() {
+        setValue(null);
+        FilterFeature.getInstance().filter(FacesContext.getCurrentInstance(), this, getValue());
+        SortFeature.getInstance().sort(FacesContext.getCurrentInstance(), this);
     }
 }

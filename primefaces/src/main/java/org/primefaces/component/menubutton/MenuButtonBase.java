@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -52,7 +52,8 @@ public abstract class MenuButtonBase extends AbstractMenu implements Widget {
         toggleEvent,
         delay,
         buttonStyle,
-        buttonStyleClass
+        buttonStyleClass,
+        disableOnAjax
     }
 
     public MenuButtonBase() {
@@ -215,5 +216,13 @@ public abstract class MenuButtonBase extends AbstractMenu implements Widget {
 
     public void setButtonStyleClass(String buttonStyleClass) {
         getStateHelper().put(PropertyKeys.buttonStyleClass, buttonStyleClass);
+    }
+
+    public boolean isDisableOnAjax() {
+        return (Boolean) getStateHelper().eval(PropertyKeys.disableOnAjax, true);
+    }
+
+    public void setDisableOnAjax(boolean disableOnAjax) {
+        getStateHelper().put(PropertyKeys.disableOnAjax, disableOnAjax);
     }
 }

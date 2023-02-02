@@ -8,6 +8,7 @@
  * @prop {JQuery} itemContainer DOM element of the container of the items (chips).
  * @prop {JQuery} inputContainer DOM element of the container for the visible INPUT.
  * @prop {string} placeholder Placeholder for the input field.
+ * @prop {boolean} hasFloatLabel Is this component wrapped in a float label.
  *
  * @interface {PrimeFaces.widget.ChipsCfg} cfg The configuration for the {@link  Chips| Chips widget}.
  * You can access this configuration via {@link PrimeFaces.widget.BaseWidget.cfg|BaseWidget.cfg}. Please note that this
@@ -29,12 +30,12 @@ PrimeFaces.widget.Chips = PrimeFaces.widget.BaseWidget.extend({
      */
     init: function(cfg) {
         this._super(cfg);
-        this.cfg.separator = this.cfg.separator||',';
 
         this.input = $(this.jqId + '_input');
         this.hinput = $(this.jqId + '_hinput');
         this.itemContainer = this.jq.children('ul');
         this.inputContainer = this.itemContainer.children('.ui-chips-input-token');
+        this.hasFloatLabel = PrimeFaces.utils.hasFloatLabel(this.jq);
 
         //pfs metadata
         this.input.data(PrimeFaces.CLIENT_ID_DATA, this.id);
@@ -62,11 +63,17 @@ PrimeFaces.widget.Chips = PrimeFaces.widget.BaseWidget.extend({
 
         this.input.on('focus.chips', function() {
             $this.itemContainer.addClass('ui-state-focus');
+            if ($this.hasFloatLabel) {
+                $this.jq.addClass('ui-inputwrapper-focus');
+            }
         }).on('blur.chips', function() {
             $this.itemContainer.removeClass('ui-state-focus');
-
             if ($this.cfg.addOnBlur) {
                 $this.addItem($(this).val(), false);
+            }
+            if ($this.hasFloatLabel) {
+                $this.jq.removeClass('ui-inputwrapper-focus');
+                $this.updateFloatLabel();
             }
         }).on('paste.chips', function(e) {
             if ($this.cfg.addOnPaste) {
@@ -76,29 +83,29 @@ PrimeFaces.widget.Chips = PrimeFaces.widget.BaseWidget.extend({
                 e.stopPropagation();
             }
         }).on('keydown.chips', function(e) {
-            var keyCode = $.ui.keyCode;
             var value = $(this).val();
 
-            switch(e.which) {
-                case keyCode.BACKSPACE:
-                    if(value.length === 0 && $this.hinput.children('option') && $this.hinput.children('option').length > 0) {
+            switch (e.key) {
+                case 'Backspace':
+                    if (value.length === 0 && $this.hinput.children('option') && $this.hinput.children('option').length > 0) {
                         var lastOption = $this.hinput.children('option:last'),
                             index = lastOption.index();
                         $this.removeItem($($this.itemContainer.children('li.ui-chips-token').get(index)));
                     }
-                break;
+                    break;
 
-                case keyCode.ENTER:
+                case 'Enter':
                     $this.addItem(value, true);
                     e.preventDefault();
                     e.stopPropagation();
-                break;
+                    break;
 
                 default:
-                    if($this.cfg.max && $this.cfg.max === $this.hinput.children('option').length) {
+                    $this.updateFloatLabel();
+                    if ($this.cfg.max && $this.cfg.max === $this.hinput.children('option').length) {
                         e.preventDefault();
                     }
-                break;
+                    break;
             }
         });
 
@@ -106,6 +113,14 @@ PrimeFaces.widget.Chips = PrimeFaces.widget.BaseWidget.extend({
         this.itemContainer.off('click', closeSelector).on('click', closeSelector, null, function(event) {
             $this.removeItem($(this).parent());
         });
+    },
+
+    /**
+     * Handles floating label CSS if wrapped in a floating label.
+     * @private
+     */
+    updateFloatLabel: function() {
+        PrimeFaces.utils.updateFloatLabel(this.jq, this.input, this.hasFloatLabel);
     },
 
     /**
@@ -123,35 +138,36 @@ PrimeFaces.widget.Chips = PrimeFaces.widget.BaseWidget.extend({
 
         var tokens = value.split(this.cfg.separator);
         for (var i = 0; i < tokens.length; i++) {
-           var token = tokens[i];
-           if(token && token.trim().length && (!this.cfg.max||this.cfg.max > this.hinput.children('option').length)) {
-               var escapedValue = PrimeFaces.escapeHTML(token);
+            var token = tokens[i];
+            if (token && token.trim().length && (!this.cfg.max || this.cfg.max > this.hinput.children('option').length)) {
+                var escapedValue = PrimeFaces.escapeHTML(token);
 
-               if (this.cfg.unique) {
-                   var duplicateFound = false;
-                   this.hinput.children('option').each(function() {
-                       if (this.value === escapedValue) {
-                           $this.refocus(refocus);
-                           duplicateFound = true;
-                           return false; // breaks
-                       }
-                   });
-                   if (duplicateFound) {
-                       return;
-                   }
-               }
+                if (this.cfg.unique) {
+                    var duplicateFound = false;
+                    this.hinput.children('option').each(function() {
+                        if (this.value === escapedValue) {
+                            duplicateFound = true;
+                            return false; // breaks
+                        }
+                    });
+                    if (duplicateFound) {
+                        $this.refocus(refocus);
+                        continue;
+                    }
+                }
 
-               var itemDisplayMarkup = '<li class="ui-chips-token ui-state-active ui-corner-all">';
-               itemDisplayMarkup += '<span class="ui-chips-token-icon ui-icon ui-icon-close"></span>';
-               itemDisplayMarkup += '<span class="ui-chips-token-label">' + escapedValue + '</span></li>';
+                var itemDisplayMarkup = '<li class="ui-chips-token ui-state-active ui-corner-all">';
+                itemDisplayMarkup += '<span class="ui-chips-token-icon ui-icon ui-icon-close"></span>';
+                itemDisplayMarkup += '<span class="ui-chips-token-label">' + escapedValue + '</span></li>';
 
-               this.inputContainer.before(itemDisplayMarkup);
-               this.refocus(refocus);
+                this.inputContainer.before(itemDisplayMarkup);
+                this.refocus(refocus);
 
-               this.hinput.append('<option value="' + escapedValue + '" selected="selected"></option>');
-               this.invokeItemSelectBehavior(escapedValue);
+                this.hinput.append('<option value="' + escapedValue + '" selected="selected"></option>');
+                this.invokeItemSelectBehavior(escapedValue);
             }
         }
+        $this.updateFloatLabel();
     },
 
     /**
@@ -182,7 +198,7 @@ PrimeFaces.widget.Chips = PrimeFaces.widget.BaseWidget.extend({
         //remove from options
         this.hinput.children('option').eq(itemIndex).remove();
 
-        if(silent) {
+        if (silent) {
             item.remove();
         }
         else {
@@ -197,6 +213,7 @@ PrimeFaces.widget.Chips = PrimeFaces.widget.BaseWidget.extend({
         if (this.placeholder && this.hinput.children('option').length === 0) {
             this.input.attr('placeholder', this.placeholder);
         }
+        $this.updateFloatLabel();
     },
 
     /**
@@ -207,16 +224,16 @@ PrimeFaces.widget.Chips = PrimeFaces.widget.BaseWidget.extend({
         var $this = this,
             tokens = this.itemContainer.children('li.ui-chips-token');
 
-        if(tokens.length) {
+        if (tokens.length) {
             var editor = '';
             tokens.each(function() {
                 var token = $(this),
                     tokenValue = token.find('span.ui-chips-token-label').html();
-                editor = editor + tokenValue +  $this.cfg.separator;
+                editor = editor + tokenValue + ($this.cfg.separator !== undefined ? $this.cfg.separator : '');
                 $this.removeItem(token, true);
             });
 
-            if(editor) {
+            if (editor) {
                 editor = editor.slice(0, -1);
                 this.input.val(editor);
             }
@@ -232,10 +249,10 @@ PrimeFaces.widget.Chips = PrimeFaces.widget.BaseWidget.extend({
      * @private
      */
     invokeItemSelectBehavior: function(itemValue) {
-        if(this.hasBehavior('itemSelect')) {
+        if (this.hasBehavior('itemSelect')) {
             var ext = {
-                params : [
-                    {name: this.id + '_itemSelect', value: itemValue}
+                params: [
+                    { name: this.id + '_itemSelect', value: itemValue }
                 ]
             };
 
@@ -249,10 +266,10 @@ PrimeFaces.widget.Chips = PrimeFaces.widget.BaseWidget.extend({
      * @private
      */
     invokeItemUnselectBehavior: function(itemValue) {
-        if(this.hasBehavior('itemUnselect')) {
+        if (this.hasBehavior('itemUnselect')) {
             var ext = {
-                params : [
-                    {name: this.id + '_itemUnselect', value: itemValue}
+                params: [
+                    { name: this.id + '_itemUnselect', value: itemValue }
                 ]
             };
 

@@ -331,6 +331,11 @@ When a custom component is used as a filter facet, filtering needs to be called 
 preferred event such as `onchange="PF('carsTable').filter()"`. Also defining a converter might be
 necessary if the value of the filter facet is not defined.
 
+Please make sure that the filter is using the **same type as the column field** if you are using comparable
+filter match modes (like greater than). For example, if the column field is an integer, and you would like to
+add a greater than filter, make sure to convert the filter to integer as well. Do so by adding a `f:converter`
+(see example below).
+
 ```xhtml
 <p:dataTable id="dataTable" var="car" value="#{tableBean.carsSmall}" widgetVar="carsTable" filteredValue="#{tableBean.filteredCars}">
 
@@ -528,6 +533,8 @@ keeps previous selections same as selecting a row with mouse click when metakey 
 ## RowKey
 RowKey should a unique identifier from your data model and used by datatable to find the selected
 rows. You must define this key by using the `rowKey` attribute.
+    
+!> RowKey must not contain a comma `,` as it will break row selection. See [`GitHub #8932`](https://github.com/primefaces/primefaces/issues/8932).
 
 ## Dynamic Columns
 Dynamic columns is handy in case you can’t know how many columns to render. Columns
@@ -696,7 +703,7 @@ useful to deal with huge data, in this case data is fetched on-demand. Set _virt
 option and provide LazyDataModel;
 
 ```xhtml
-<p:dataTable var="car" value="#{bean.data}" scrollable="true" scrollHeight="150" virtual="true">
+<p:dataTable var="car" value="#{bean.data}" scrollable="true" scrollHeight="150" virtualScroll="true">
     <p:column />
     //columns
 </p:dataTable>
@@ -789,7 +796,7 @@ If you have selection enabled, you either need to implement _getRowData_ and _ge
 
 
 ```xhtml
-<p:dataTable var="car" value="#{carBean.model}" paginator="true" rows="10" lazy="true">
+<p:dataTable var="car" value="#{carBean.model}" paginator="true" rows="10">
     //columns
 </p:dataTable>
 ```
@@ -801,12 +808,14 @@ public class CarBean {
         model = new LazyDataModel() {
             @Override
             public int count(Map<String, FilterMeta> filterBy) {
-                //logical row count based on a count query
+                // logical row count based on a count query taking filter into account
+                return totalElements;
             }
 
             @Override
             public List<Car> load(int first, int pageSize, Map<String, SortMeta> sortBy, Map<String, FilterMeta> filterBy) {
-                //load physical data
+                // load physical data
+                return requestedResultPage;
             }
         };
     }
@@ -815,6 +824,7 @@ public class CarBean {
     }
 }
 ```
+
 DataTable calls your load implementation whenever a paging, sorting or filtering occurs with
 following parameters:
 
@@ -829,6 +839,68 @@ according to the logical number of rows to display.
 It is suggested to use _field_ attribute of column component to define the field names passed as
 sortBy and filterBy, otherwise these fields would be tried to get extracted from the value
 expression which is not possible in cases like composite components.
+
+To avoid doing a separate count-statement against your datasource you may implement it like this:
+(This may help to improve performance but comes at the price of keeping an eye on https://github.com/primefaces/primefaces/issues/1921.)
+```java
+public class CarBean {
+    private LazyDataModel model;
+
+    public CarBean() {
+        model = new LazyDataModel() {
+            @Override
+            public int count(Map<String, FilterMeta> filterBy) {
+                return 0;
+            }
+
+            @Override
+            public List<Car> load(int first, int pageSize, Map<String, SortMeta> sortBy, Map<String, FilterMeta> filterBy) {
+                //load physical data - your datasource (eg Spring Data or Apache Solr) has one API-call which returns page including rowCount
+                org.springframework.data.domain.Page<Car> requestedResultPage = carRepository.find...;
+
+                // afterwards set rowCount
+                setRowCount(requestedResultPage.getTotalElements());
+
+                // return page data
+                return requestedResultPage.getContent();                
+            }
+        };
+    }
+    public LazyDataModel getModel() {
+        return model;
+    }
+}
+```
+
+A third variant may be doing something like this: 
+
+```java
+public class CarBean {
+    private LazyDataModel model;
+
+    public CarBean() {
+        model = new LazyDataModel() {
+            @Override
+            public int count(Map<String, FilterMeta> filterBy) {
+                return 0;
+            }
+
+            @Override
+            public List<Car> load(int first, int pageSize, Map<String, SortMeta> sortBy, Map<String, FilterMeta> filterBy) {
+                // setRowCount and recalculateFirst is required if #count method isnt implemented correctly
+                setRowCount(x);
+                first = recalculateFirst(first, pageSize, getRowCount());                
+                
+                // load physical data
+                return requestedResultPage;
+            }
+        };
+    }
+    public LazyDataModel getModel() {
+        return model;
+    }
+}
+```
 
 ### JpaLazyDataModel
 

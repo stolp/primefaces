@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -32,7 +32,7 @@ class ResourceUtilsTest {
 
     @Test
     void appendCacheBuster_cached() {
-        String url ="http://primefaces.org";
+        String url = "http://primefaces.org";
         String result = ResourceUtils.appendCacheBuster(url, true);
         assertEquals("http://primefaces.org?pfdrid_c=true", result);
 
@@ -40,7 +40,7 @@ class ResourceUtilsTest {
 
     @Test
     void appendCacheBuster_notCached() {
-        String url ="http://primefaces.org";
+        String url = "http://primefaces.org";
         String result = ResourceUtils.appendCacheBuster(url, false);
         assertTrue(result.matches("http:\\/\\/primefaces.org\\?pfdrid_c=false&uid=.*"));
     }

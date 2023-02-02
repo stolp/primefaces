@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -39,7 +39,7 @@ import org.primefaces.selenium.component.DatePicker;
 
 public class DatePicker009Test extends AbstractDatePickerTest {
 
-    private final List<String> MONTHS = Arrays.asList(new String[] {
+    private static final List<String> MONTHS = Arrays.asList(new String[] {
         "January", "February", "March", "April", "May", "June", "July",
         "August", "September", "October", "November", "December"
     });

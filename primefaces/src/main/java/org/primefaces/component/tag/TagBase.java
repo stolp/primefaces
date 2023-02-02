@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,15 +23,14 @@
  */
 package org.primefaces.component.tag;
 
-import javax.faces.component.UIComponentBase;
+import javax.faces.component.UIOutput;
 
-public abstract class TagBase extends UIComponentBase {
+public abstract class TagBase extends UIOutput {
     public static final String COMPONENT_FAMILY = "org.primefaces.component";
 
     public static final String DEFAULT_RENDERER = "org.primefaces.component.TagRenderer";
 
     public enum PropertyKeys {
-        value,
         severity,
         rounded,
         icon,
@@ -46,14 +45,6 @@ public abstract class TagBase extends UIComponentBase {
     @Override
     public String getFamily() {
         return COMPONENT_FAMILY;
-    }
-
-    public String getValue() {
-        return (String) getStateHelper().eval(PropertyKeys.value, null);
-    }
-
-    public void setValue(String value) {
-        getStateHelper().put(PropertyKeys.value, value);
     }
 
     public String getIcon() {

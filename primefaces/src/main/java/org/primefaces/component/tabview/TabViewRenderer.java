@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -62,24 +62,29 @@ public class TabViewRenderer extends CoreRenderer {
         Map<String, String> params = context.getExternalContext().getRequestParameterMap();
         TabView tabView = (TabView) component;
         String clientId = tabView.getClientId(context);
-        String var = tabView.getVar();
 
         if (tabView.isContentLoadRequest(context)) {
-            Tab tabToLoad = null;
+            if (tabView.isRepeating()) {
+                int index = Integer.parseInt(params.get(clientId + "_tabindex"));
+                tabView.setIndex(index);
 
-            if (var == null) {
-                String tabClientId = params.get(clientId + "_newTab");
-                tabToLoad = tabView.findTab(tabClientId);
-
+                Tab tabToLoad = tabView.getDynamicTab();
                 tabToLoad.encodeAll(context);
-                tabToLoad.setLoaded(true);
+
+                if (tabView.isDynamic()) {
+                    tabToLoad.setLoaded(index, true);
+                }
+
+                tabView.setIndex(-1);
             }
             else {
-                int tabindex = Integer.parseInt(params.get(clientId + "_tabindex"));
-                tabView.setIndex(tabindex);
-                tabToLoad = (Tab) tabView.getChildren().get(0);
+                String tabClientId = params.get(clientId + "_newTab");
+                Tab tabToLoad = tabView.findTab(tabClientId);
                 tabToLoad.encodeAll(context);
-                tabView.setIndex(-1);
+
+                if (tabView.isDynamic()) {
+                    tabToLoad.setLoaded(true);
+                }
             }
         }
         else {
@@ -112,6 +117,8 @@ public class TabViewRenderer extends CoreRenderer {
                 .attr("effectDuration", tabView.getEffectDuration(), null)
                 .attr("scrollable", tabView.isScrollable())
                 .attr("tabindex", tabView.getTabindex(), null)
+                .attr("focusOnError", tabView.isFocusOnError(), false)
+                .attr("focusOnLastActiveTab", tabView.isFocusOnLastActiveTab(), true)
                 .attr("touchable", ComponentUtils.isTouchable(context, tabView),  true)
                 .attr("multiViewState", tabView.isMultiViewState(), false);
 
@@ -146,12 +153,14 @@ public class TabViewRenderer extends CoreRenderer {
         writer.writeAttribute(HTML.WIDGET_VAR, widgetVar, null);
 
         if ("bottom".equals(orientation)) {
+            encodeFooter(context, tabView);
             encodeContents(context, tabView);
             encodeHeaders(context, tabView);
         }
         else {
             encodeHeaders(context, tabView);
             encodeContents(context, tabView);
+            encodeFooter(context, tabView);
         }
 
         encodeStateHolder(context, tabView, clientId + "_activeIndex", String.valueOf(tabView.getActiveIndex()));
@@ -168,6 +177,17 @@ public class TabViewRenderer extends CoreRenderer {
 
     protected void encodeStateHolder(FacesContext facesContext, TabView tabView, String name, String value) throws IOException {
         renderHiddenInput(facesContext, name, value, false);
+    }
+
+    protected void encodeFooter(FacesContext context, TabView tabView) throws IOException {
+        UIComponent actions = tabView.getFacet("footer");
+        if (ComponentUtils.shouldRenderFacet(actions)) {
+            ResponseWriter writer = context.getResponseWriter();
+            writer.startElement("div", null);
+            writer.writeAttribute("class", "ui-tabs-footer", null);
+            actions.encodeAll(context);
+            writer.endElement("div");
+        }
     }
 
     protected void encodeHeaders(FacesContext context, TabView tabView) throws IOException {
@@ -270,13 +290,14 @@ public class TabViewRenderer extends CoreRenderer {
     protected void encodeContents(FacesContext context, TabView tabView) throws IOException {
         ResponseWriter writer = context.getResponseWriter();
         boolean dynamic = tabView.isDynamic();
+        boolean repeating = tabView.isRepeating();
 
         writer.startElement("div", null);
         writer.writeAttribute("class", TabView.PANELS_CLASS, null);
 
         tabView.forEachTab((tab, i, active) -> {
             try {
-                encodeTabContent(context, tab, i, active, dynamic);
+                encodeTabContent(context, tab, i, active, dynamic, repeating);
             }
             catch (IOException ex) {
                 throw new FacesException(ex);
@@ -286,7 +307,7 @@ public class TabViewRenderer extends CoreRenderer {
         writer.endElement("div");
     }
 
-    protected void encodeTabContent(FacesContext context, Tab tab, int index, boolean active, boolean dynamic)
+    protected void encodeTabContent(FacesContext context, Tab tab, int index, boolean active, boolean dynamic, boolean repeating)
             throws IOException {
         ResponseWriter writer = context.getResponseWriter();
         String styleClass = active ? TabView.ACTIVE_TAB_CONTENT_CLASS : TabView.INACTIVE_TAB_CONTENT_CLASS;
@@ -301,7 +322,13 @@ public class TabViewRenderer extends CoreRenderer {
         if (dynamic) {
             if (active) {
                 tab.encodeAll(context);
-                tab.setLoaded(true);
+
+                if (repeating) {
+                    tab.setLoaded(index, true);
+                }
+                else {
+                    tab.setLoaded(true);
+                }
             }
         }
         else {

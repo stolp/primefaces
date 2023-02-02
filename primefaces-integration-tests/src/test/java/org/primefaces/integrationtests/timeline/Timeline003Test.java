@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,7 +26,7 @@ package org.primefaces.integrationtests.timeline;
 import java.util.List;
 import java.util.Locale;
 
-import org.apache.commons.lang.math.NumberUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -94,7 +94,7 @@ public class Timeline003Test extends AbstractPrimePageTest {
         for (WebElement monthElement : monthElements) {
             Assertions.assertNotNull(monthElement);
             String monthText = monthElement.getText();
-            
+
             // sometimes the month CSS contains a year which might be a bug in vis-timeline
             if (NumberUtils.isDigits(monthText)) {
                 continue;
@@ -109,6 +109,7 @@ public class Timeline003Test extends AbstractPrimePageTest {
     }
 
     public static class Page extends AbstractPrimePage {
+
         @FindBy(id = "form:msgs")
         Messages messages;
 

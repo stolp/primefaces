@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -43,14 +43,7 @@ import org.primefaces.util.ComponentUtils;
 import org.primefaces.util.Constants;
 import org.primefaces.util.LangUtils;
 
-import com.lowagie.text.Document;
-import com.lowagie.text.DocumentException;
-import com.lowagie.text.Element;
-import com.lowagie.text.Font;
-import com.lowagie.text.FontFactory;
-import com.lowagie.text.PageSize;
-import com.lowagie.text.Paragraph;
-import com.lowagie.text.Phrase;
+import com.lowagie.text.*;
 import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
@@ -154,10 +147,12 @@ public class TreeTablePDFExporter extends TreeTableExporter {
             config.getOnTableRender().invoke(context.getELContext(), new Object[]{pdfTable, table});
         }
 
-        addTableFacets(context, table, pdfTable, ColumnType.HEADER);
-        boolean headerGroup = addColumnGroup(table, pdfTable, ColumnType.HEADER);
-        if (!headerGroup) {
-            addColumnFacets(table, pdfTable, ColumnType.HEADER);
+        if (config.isExportHeader()) {
+            addTableFacets(context, table, pdfTable, ColumnType.HEADER);
+            boolean headerGroup = addColumnGroup(table, pdfTable, ColumnType.HEADER);
+            if (!headerGroup) {
+                addColumnFacets(table, pdfTable, ColumnType.HEADER);
+            }
         }
 
         if (config.isPageOnly()) {
@@ -170,11 +165,13 @@ public class TreeTablePDFExporter extends TreeTableExporter {
             exportAll(context, table, pdfTable);
         }
 
-        addColumnGroup(table, pdfTable, ColumnType.FOOTER);
-        if (table.hasFooterColumn()) {
-            addColumnFacets(table, pdfTable, ColumnType.FOOTER);
+        if (config.isExportFooter()) {
+            addColumnGroup(table, pdfTable, ColumnType.FOOTER);
+            if (table.hasFooterColumn()) {
+                addColumnFacets(table, pdfTable, ColumnType.FOOTER);
+            }
+            addTableFacets(context, table, pdfTable, ColumnType.FOOTER);
         }
-        addTableFacets(context, table, pdfTable, ColumnType.FOOTER);
 
         return pdfTable;
     }
@@ -264,17 +261,9 @@ public class TreeTablePDFExporter extends TreeTableExporter {
         if (cg == null || cg.getChildCount() == 0) {
             return false;
         }
-        for (UIComponent component : cg.getChildren()) {
-            if (!(component instanceof org.primefaces.component.row.Row)) {
-                continue;
-            }
-            org.primefaces.component.row.Row row = (org.primefaces.component.row.Row) component;
-            for (UIComponent rowComponent : row.getChildren()) {
-                if (!(rowComponent instanceof UIColumn)) {
-                    // most likely a ui:repeat which won't work here
-                    continue;
-                }
-                UIColumn column = (UIColumn) rowComponent;
+        FacesContext context = FacesContext.getCurrentInstance();
+        table.forEachColumnGroupRow(context, cg, true, row -> {
+            table.forEachColumn(context, row, true, true, false, column -> {
                 if (column.isRendered() && column.isExportable()) {
                     String textValue;
                     switch (columnType) {
@@ -291,13 +280,16 @@ public class TreeTablePDFExporter extends TreeTableExporter {
                             break;
                     }
 
-                    int rowSpan = column.getRowspan();
-                    int colSpan = column.getColspan();
+                    int rowSpan = column.getExportRowspan() != 0 ? column.getExportRowspan() : column.getRowspan();
+                    int colSpan = column.getExportColspan() != 0 ? column.getExportColspan() : column.getColspan();
                     addColumnValue(pdfTable, textValue, rowSpan, colSpan);
                 }
-            }
+                return true;
+            });
+
             pdfTable.completeRow();
-        }
+            return true;
+        });
         return true;
     }
 

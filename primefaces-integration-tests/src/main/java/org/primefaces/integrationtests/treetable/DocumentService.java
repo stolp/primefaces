@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2021 PrimeTek
+ * Copyright (c) 2009-2023 PrimeTek Informatics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -95,6 +95,16 @@ public class DocumentService {
         //Videos
         TreeNode primefacesmkv = new DefaultTreeNode("video", new Document("primefaces.mkv", "1000kb", "Video"), videos);
         TreeNode introavi = new DefaultTreeNode("video", new Document("intro.avi", "500kb", "Video"), videos);
+
+        return root;
+    }
+
+    public TreeNode createOtherDocuments() {
+        TreeNode root = new DefaultTreeNode(new Document("Projects", "-", "Folder"), null);
+
+        TreeNode applications = new DefaultTreeNode(new Document("Project A", "100kb", "File"), root);
+        TreeNode cloud = new DefaultTreeNode(new Document("Project B", "20kb", "File"), root);
+        TreeNode desktop = new DefaultTreeNode(new Document("Project C", "150kb", "File"), root);
 
         return root;
     }
